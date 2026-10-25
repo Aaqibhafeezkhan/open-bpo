@@ -1,0 +1,14 @@
+[
+  {
+    "name": "crm_lookup",
+    "description": "Fetch known lead metadata by phone number"
+  },
+  {
+    "name": "schedule_callback",
+    "description": "Schedule a callback slot with a human closer"
+  },
+  {
+    "name": "send_brochure",
+    "description": "Send a generic brochure link by SMS or WhatsApp"
+  }
+]

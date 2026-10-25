@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible problem in open-bpo.
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please provide enough detail to reproduce on the mock-first local stack.
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the issue.
+      placeholder: API returns 202 forever for /v1/calls/:id/qa
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include exact commands, payloads, and expected vs actual behavior.
+      placeholder: |
+        1) docker compose up --build
+        2) ./scripts/demo-golden-path.sh
+        3) ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and output
+      description: Paste relevant logs, stack traces, or screenshots.
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Tag, commit SHA, or branch used.
+      placeholder: v0.1.0-ready / main@<sha>
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I removed secrets and customer/private data from this report.
+          required: true

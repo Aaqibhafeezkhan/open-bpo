@@ -1,0 +1,157 @@
+# API Reference
+
+Base URL (local default): `http://127.0.0.1:4017`
+
+## Health
+
+### `GET /health`
+
+Returns service liveness.
+
+Response:
+
+```json
+{ "status": "ok", "service": "open-bpo-api" }
+```
+
+---
+
+## Recipes
+
+### `GET /v1/recipes`
+
+Lists recipe directories discovered under `recipes/`.
+
+Response:
+
+```json
+{
+  "recipes": [
+    {
+      "id": "lead-qualification",
+      "checklistPath": "recipes/lead-qualification/checklist.json",
+      "promptPath": "recipes/lead-qualification/prompt.md",
+      "toolsPath": "recipes/lead-qualification/tools.json"
+    }
+  ]
+}
+```
+
+---
+
+## Calls and QA
+
+### `POST /v1/webhooks/call-ended`
+
+Ingest a call-ended event and enqueue QA scoring.
+
+Request body:
+
+```json
+{
+  "callId": "demo-call-001",
+  "direction": "inbound",
+  "duration": 242,
+  "recipeId": "lead-qualification",
+  "startSession": false,
+  "provider": "mock",
+  "transcript": [
+    { "speaker": "agent", "text": "Hello", "timestamp": "2026-10-25T10:00:00.000Z" },
+    { "speaker": "caller", "text": "Need voice AI", "timestamp": "2026-10-25T10:00:03.000Z" }
+  ]
+}
+```
+
+Response (`202`):
+
+```json
+{
+  "status": "queued",
+  "callId": "demo-call-001",
+  "qaJobId": "1",
+  "session": null
+}
+```
+
+### `GET /v1/calls`
+
+Returns recent calls and scoring/session summary fields.
+
+### `GET /v1/calls/:callId/qa`
+
+Returns:
+- `202` + `{ "status": "pending" }` while scoring is in progress
+- `200` + full call + QA payload once available
+- `404` if call id is unknown
+
+---
+
+## Session loop
+
+### `POST /v1/sessions`
+
+Queue a mock live session job.
+
+Request body:
+
+```json
+{
+  "callId": "demo-call-001",
+  "direction": "inbound",
+  "provider": "mock",
+  "recipeId": "lead-qualification",
+  "seedUtterances": ["Hello", "Need pricing"]
+}
+```
+
+Response (`202`):
+
+```json
+{
+  "status": "queued",
+  "sessionId": "d8f...",
+  "jobId": "7"
+}
+```
+
+### `GET /v1/sessions`
+
+Lists recent session records including state, trace, and errors.
+
+### `GET /v1/sessions/:sessionId`
+
+Returns one session record.
+
+---
+
+## Demo automation endpoints
+
+### `POST /v1/demo/calls/inbound`
+### `POST /v1/demo/calls/outbound`
+
+Create a sample call (plus optional session) without external dependencies.
+
+Request body:
+
+```json
+{
+  "recipeId": "lead-qualification",
+  "provider": "mock",
+  "startSession": true
+}
+```
+
+Response (`202`):
+
+```json
+{
+  "status": "queued",
+  "callId": "inbound-176138...",
+  "direction": "inbound",
+  "qaJobId": "9",
+  "session": {
+    "sessionId": "a1b2...",
+    "jobId": "10"
+  }
+}
+```

@@ -1,0 +1,70 @@
+{
+  "id": "lead-qualification",
+  "name": "Lead Qualification QA Checklist",
+  "version": "1.0.0",
+  "description": "Deterministic QA for outbound/inbound lead qualification calls.",
+  "passThreshold": 90,
+  "warningThreshold": 75,
+  "items": [
+    {
+      "id": "opening-greeting",
+      "title": "Agent opens with greeting",
+      "maxScore": 10,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["hello", "hi", "namaste", "good morning", "good evening"]
+      }
+    },
+    {
+      "id": "need-discovery",
+      "title": "Agent asks requirement/need question",
+      "maxScore": 20,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["requirement", "need", "use case", "kis liye", "problem"]
+      }
+    },
+    {
+      "id": "budget-check",
+      "title": "Agent checks budget",
+      "maxScore": 20,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["budget", "monthly spend", "price range", "kitna budget"]
+      }
+    },
+    {
+      "id": "timeline-check",
+      "title": "Agent checks purchase timeline",
+      "maxScore": 20,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["timeline", "when", "kab tak", "this month", "next month"]
+      }
+    },
+    {
+      "id": "consent-callback",
+      "title": "Agent receives callback consent",
+      "maxScore": 1,
+      "fatal": true,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["consent", "permission", "can we call", "callback okay"]
+      }
+    },
+    {
+      "id": "closing-summary",
+      "title": "Agent closes with recap",
+      "maxScore": 10,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["summary", "recap", "to confirm", "as discussed"]
+      }
+    }
+  ]
+}

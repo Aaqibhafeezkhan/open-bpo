@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an improvement to open-bpo.
+title: "[feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggest focused, incremental improvements that preserve the mock-first local path.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user/developer problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe API, UX, or architecture changes.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional alternatives or trade-offs.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public OSS safety
+      options:
+        - label: This proposal does not require shipping customer data or secrets.
+          required: true
+        - label: This proposal can be developed/tested in mock-first mode.
+          required: true

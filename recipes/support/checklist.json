@@ -1,0 +1,50 @@
+{
+  "id": "support-resolution",
+  "name": "Support Resolution QA Checklist",
+  "version": "1.0.0",
+  "description": "QA checklist for support triage calls.",
+  "passThreshold": 90,
+  "warningThreshold": 75,
+  "items": [
+    {
+      "id": "issue-confirmation",
+      "title": "Issue statement confirmed",
+      "maxScore": 25,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["understand your issue", "problem is", "you are facing"]
+      }
+    },
+    {
+      "id": "ownership",
+      "title": "Agent takes ownership",
+      "maxScore": 25,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["i will help", "let me check", "i will resolve"]
+      }
+    },
+    {
+      "id": "eta",
+      "title": "Agent gives ETA or next step",
+      "maxScore": 25,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["within", "by today", "next step", "follow up"]
+      }
+    },
+    {
+      "id": "no-abuse",
+      "title": "No abusive language",
+      "maxScore": 1,
+      "fatal": true,
+      "rule": {
+        "type": "keyword_none",
+        "keywords": ["idiot", "stupid", "shut up", "useless"]
+      }
+    }
+  ]
+}
