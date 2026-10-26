@@ -12,7 +12,13 @@ pnpm test
 pnpm build
 ```
 
-To run full local stack:
+To run the local simulated floor:
+
+```bash
+pnpm demo
+```
+
+To run the container-backed stack:
 
 ```bash
 docker compose up --build

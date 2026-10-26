@@ -7,9 +7,20 @@
 
 **Open-source AI call centre: run an AI BPO floor on your laptop in one afternoon.**
 
-open-bpo is a self-hostable scaffold for mock voice sessions, deterministic checklist QA, and call operations. The default path needs no paid API keys: Fastify accepts demo calls, BullMQ workers process sessions and QA, Postgres stores results, and a React console shows the floor.
+open-bpo is a self-hostable scaffold for mock voice sessions, deterministic checklist QA, and call operations. The default demo needs no API keys or infrastructure services.
 
-> **Demo GIF placeholder:** add an authentic recording of the local golden path here. No screenshot or demo is included until it has been captured from a running build.
+![open-bpo QA operations console](docs/assets/console.png)
+
+## 30-second quickstart
+
+Requirements: Node.js 20+ and pnpm 10.
+
+```bash
+pnpm install
+pnpm demo
+```
+
+Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Fake inbound and outbound calls stream into the dashboard with session traces and deterministic QA scores. Stop all three local processes with `Ctrl+C`.
 
 ## Why open-bpo
 
@@ -42,9 +53,9 @@ flowchart LR
 
 The provider boundary and runtime flows are described in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Three-command quickstart
+## Container quickstart
 
-Requirements: Docker with Compose and ports `4017`, `43123`, `55432`, and `56379` available.
+For the Postgres and Redis-backed topology, use Docker with Compose and ports `4017`, `43123`, `55432`, and `56379` available.
 
 ```bash
 git clone https://github.com/nitturkaryash/open-bpo.git
@@ -71,7 +82,7 @@ pnpm test
 pnpm build
 ```
 
-The repository uses pnpm 10 and Node.js 22. The root scripts cover all workspaces; `pnpm build` creates the web production bundle, while the API and worker run TypeScript directly with `tsx`.
+The repository uses pnpm 10 and supports Node.js 20 or newer. The root scripts cover all workspaces; `pnpm build` creates the web production bundle, while the API and worker run TypeScript directly with `tsx`.
 
 ## Recipes and providers
 

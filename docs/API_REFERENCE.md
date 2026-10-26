@@ -100,7 +100,7 @@ Request body:
   "direction": "inbound",
   "provider": "mock",
   "recipeId": "lead-qualification",
-  "seedUtterances": ["Hello", "Need pricing"]
+  "seedUtterances": ["Hello", "Need account help"]
 }
 ```
 

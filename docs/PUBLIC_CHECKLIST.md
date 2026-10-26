@@ -13,7 +13,7 @@
 - [x] `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
 - [x] `.env.example` without secrets
 - [x] Docker Compose one-command stack (api + worker + web + redis + postgres)
-- [x] Mock provider path (no paid keys required)
+- [x] Mock provider path (no API keys required)
 - [x] QA checklist schema + deterministic scorer + unit test
 - [x] Trademark notice included
 - [x] Public-safe recipe examples (lead qualification + support)
