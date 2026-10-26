@@ -1,5 +1,7 @@
 # open-bpo
 
+![open-bpo: open-source AI call centre](docs/assets/hero.png)
+
 [![CI](https://github.com/nitturkaryash/open-bpo/actions/workflows/ci.yml/badge.svg)](https://github.com/nitturkaryash/open-bpo/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/nitturkaryash/open-bpo)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/nitturkaryash/open-bpo?style=social)](https://github.com/nitturkaryash/open-bpo/stargazers)
@@ -7,9 +9,11 @@
 
 **Open-source AI call centre: run an AI BPO floor on your laptop in one afternoon.**
 
+![pnpm demo running a simulated call floor](docs/assets/demo.gif)
+
 open-bpo is a self-hostable scaffold for mock voice sessions, deterministic checklist QA, and call operations. The default demo needs no API keys or infrastructure services.
 
-![open-bpo QA operations console](docs/assets/console.png)
+![open-bpo QA operations console](docs/assets/console-framed.png)
 
 ## 30-second quickstart
 
@@ -36,6 +40,10 @@ Voice-agent demos often stop at a conversation. A BPO floor also needs queues, s
 - Filesystem recipes for prompts, tools, and QA policy
 - Local Redis and Postgres stack through Docker Compose
 - No-key golden-path script suitable for local smoke tests
+
+## How it works
+
+![open-bpo architecture: simulated calls, API and queue, QA scoring, ops console](docs/assets/architecture.png)
 
 ## Architecture
 

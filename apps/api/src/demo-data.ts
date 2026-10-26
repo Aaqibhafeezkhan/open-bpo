@@ -23,13 +23,13 @@ export function buildDemoTranscript(direction: "inbound" | "outbound", recipeId:
         { speaker: "agent", text: "Hello and namaste. What requirement and use case do you have?", timestamp: now },
         { speaker: "caller", text: "Inbound support and outbound sales follow-up.", timestamp: now },
         { speaker: "agent", text: "What monthly budget and timeline are you planning? Callback okay with consent?", timestamp: now },
-        { speaker: "caller", text: "Budget 2 lakh monthly, timeline next month, callback consent yes.", timestamp: now }
+        { speaker: "caller", text: "We get about 500 calls a day, timeline next month, callback consent yes.", timestamp: now }
       ]
     : [
         { speaker: "agent", text: "Hello and namaste, I am calling from the AI onboarding team.", timestamp: now },
         { speaker: "caller", text: "Sure, please continue.", timestamp: now },
         { speaker: "agent", text: "Can I understand your requirement and expected monthly budget?", timestamp: now },
-        { speaker: "caller", text: "Need voice QA for 50 agents, budget around 1.5 lakh.", timestamp: now },
+        { speaker: "caller", text: "Need voice QA for 50 agents across two shifts.", timestamp: now },
         { speaker: "agent", text: "Great, can we schedule a callback with your consent tomorrow?", timestamp: now },
         { speaker: "caller", text: "Yes, callback consent confirmed.", timestamp: now }
       ];
