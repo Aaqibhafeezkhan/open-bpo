@@ -1,28 +1,38 @@
-# Quickstart (zero paid keys)
+# Quickstart
 
-This quickstart runs a full local mock deployment:
+This quickstart runs a local simulated call floor:
 - inbound/outbound demo calls
-- live mock session lifecycle
+- streaming mock session lifecycle
 - deterministic QA scoring
 - web console
 
 ## Prerequisites
 
-- Docker + Docker Compose v2
+- Node.js 20 or newer
+- pnpm 10
 
-## 1) Boot stack
+## 1) Install and verify
 
 ```bash
-docker compose up --build
+pnpm install
+pnpm typecheck
+pnpm test
+pnpm build
 ```
+
+## 2) Start the demo
+
+```bash
+pnpm demo
+```
+
+This one command starts the API, simulated-call worker, and web console. It uses in-memory data and needs no external services or API keys. Calls begin streaming automatically.
 
 Local endpoints:
 - API: `http://127.0.0.1:4017`
 - Web: `http://127.0.0.1:43123`
-- Postgres: `127.0.0.1:55432`
-- Redis: `127.0.0.1:56379`
 
-## 2) Trigger inbound and outbound demo calls
+## 3) Trigger calls manually
 
 ```bash
 curl -X POST http://127.0.0.1:4017/v1/demo/calls/inbound \
@@ -34,7 +44,7 @@ curl -X POST http://127.0.0.1:4017/v1/demo/calls/outbound \
   -d '{"recipeId":"support","provider":"mock","startSession":true}'
 ```
 
-## 3) Verify call list and QA
+## 4) Verify call list and QA
 
 ```bash
 curl http://127.0.0.1:4017/v1/calls
@@ -46,7 +56,7 @@ Choose a `callId` and poll QA:
 curl http://127.0.0.1:4017/v1/calls/<callId>/qa
 ```
 
-## 4) Verify session lifecycle
+## 5) Verify session lifecycle
 
 ```bash
 curl http://127.0.0.1:4017/v1/sessions
@@ -54,7 +64,7 @@ curl http://127.0.0.1:4017/v1/sessions
 
 You should see `pending -> assigned -> active -> completed` transitions in session records.
 
-## 5) Open web console
+## 6) Open web console
 
 Open `http://127.0.0.1:43123`.
 
@@ -62,7 +72,19 @@ Open `http://127.0.0.1:43123`.
 - inspect QA breakdown
 - inspect session traces
 
-## 6) CI-friendly golden path
+Stop the demo and all three processes with `Ctrl+C`.
+
+## Container-backed stack
+
+To run the Postgres and Redis-backed topology instead:
+
+```bash
+docker compose up --build
+```
+
+The database and queue are exposed locally on ports `55432` and `56379`.
+
+## CI-friendly golden path
 
 ```bash
 ./scripts/demo-golden-path.sh

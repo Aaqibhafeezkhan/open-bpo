@@ -1,0 +1,80 @@
+{
+  "id": "payment-reminder",
+  "name": "Payment Reminder QA Checklist",
+  "version": "1.0.0",
+  "description": "Deterministic QA for courteous payment-reminder calls.",
+  "passThreshold": 90,
+  "warningThreshold": 70,
+  "items": [
+    {
+      "id": "identity-safe-opening",
+      "title": "Agent confirms the intended recipient before account details",
+      "maxScore": 20,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["am i speaking with", "may i speak with", "confirm your name"]
+      }
+    },
+    {
+      "id": "amount",
+      "title": "Agent states the outstanding amount",
+      "maxScore": 20,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["outstanding amount", "amount due", "balance due"]
+      }
+    },
+    {
+      "id": "due-date",
+      "title": "Agent states the due date",
+      "maxScore": 20,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["due date", "due on", "pay by"]
+      }
+    },
+    {
+      "id": "next-step",
+      "title": "Agent confirms payment status or a next step",
+      "maxScore": 25,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["already paid", "payment plan", "schedule a callback", "payment link", "next step"]
+      }
+    },
+    {
+      "id": "recap",
+      "title": "Agent closes with a recap",
+      "maxScore": 15,
+      "fatal": false,
+      "rule": {
+        "type": "keyword_any",
+        "keywords": ["to recap", "to confirm", "as discussed"]
+      }
+    },
+    {
+      "id": "no-sensitive-data",
+      "title": "Agent does not request sensitive payment credentials",
+      "maxScore": 1,
+      "fatal": true,
+      "rule": {
+        "type": "keyword_none",
+        "keywords": ["tell me your cvv", "share your pin", "read your otp", "tell me your password", "full card number"]
+      }
+    },
+    {
+      "id": "no-coercion",
+      "title": "Agent avoids coercive or shaming language",
+      "maxScore": 1,
+      "fatal": true,
+      "rule": {
+        "type": "keyword_none",
+        "keywords": ["you will be arrested", "we will shame you", "pay right now or else", "you are dishonest"]
+      }
+    }
+  ]
+}

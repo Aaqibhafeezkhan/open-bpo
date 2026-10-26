@@ -33,7 +33,7 @@
       "fatal": false,
       "rule": {
         "type": "keyword_any",
-        "keywords": ["budget", "monthly spend", "price range", "kitna budget"]
+        "keywords": ["budget", "monthly spend", "spend range", "kitna budget"]
       }
     },
     {

@@ -138,7 +138,7 @@ export function App() {
     <div className="page">
       <header className="hero">
         <div>
-          <p className="eyebrow">open-bpo / Qualia Technologies</p>
+          <p className="eyebrow">open-bpo / QualiaBits</p>
           <h1>AI BPO Operations Console</h1>
           <p className="subtitle">
             Local mock deployment with inbound/outbound call simulation, live session lifecycle, checklist QA scoring, and

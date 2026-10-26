@@ -70,3 +70,5 @@ If a fatal rule fails and has `maxScore > 0`, overall verdict is `fail` regardle
 2. Run `pnpm test` to validate scorer behavior.
 3. Use `POST /v1/demo/calls/inbound` with your recipe to verify end-to-end output.
 4. Review QA breakdown in web console.
+
+See [QA checklist examples](QA_CHECKLISTS.md) and the complete `payment-reminder` recipe for additional patterns.

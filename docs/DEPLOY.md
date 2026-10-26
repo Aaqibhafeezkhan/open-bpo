@@ -1,6 +1,6 @@
 # Deploying open-bpo for a small commercial operation
 
-This guide explains how to evolve the local stack into a small paid deployment
+This guide explains how to evolve the local stack into a small production deployment
 for agencies or BPO operators.
 
 ## 1. Baseline topology
@@ -51,12 +51,12 @@ Recommended additions for production hardening:
 
 - Auth + RBAC
 - tenant isolation at DB and queue level
-- billing/metering
+- usage metering
 - secure provider credential vaulting
 
-## 5. Commercial packaging guidance (what to charge for)
+## 5. Extension areas
 
-The OSS core is free. Service businesses can charge for:
+Service teams commonly extend the core with:
 - deployment + infrastructure management
 - recipe/checklist customization per process
 - provider integration work (Twilio/LiveKit/SIP trunks)
@@ -69,4 +69,4 @@ The OSS core is free. Service businesses can charge for:
 2. Add real provider adapters under `packages/providers`.
 3. Introduce auth and tenant boundaries.
 4. Add observability, runbooks, and incident workflow.
-5. Offer managed plans on top of this OSS base.
+5. Add an operational support layer on top of this OSS base.
