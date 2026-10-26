@@ -2,6 +2,18 @@
 
 Base URL (local default): `http://127.0.0.1:4017`
 
+## Authentication and browser access
+
+Set `OPEN_BPO_API_TOKEN` to protect every `/v1/*` route and `/mcp`. Clients send `Authorization: Bearer <token>`. `/health`, `/docs/openapi.json`, and `/llms.txt` remain open. Production mode refuses to start without a token.
+
+Browser origins are limited by `OPEN_BPO_CORS_ORIGINS`, a comma-separated list. Its default permits the local web console at `http://localhost:43123` and `http://127.0.0.1:43123`. The web app can send the bearer header through `VITE_API_TOKEN`.
+
+The generated OpenAPI document is available at `GET /docs/openapi.json` and committed at `docs/openapi.json`.
+
+## MCP
+
+`POST /mcp`, `GET /mcp`, and `DELETE /mcp` expose the stateless streamable HTTP MCP transport. When API auth is enabled, use the same bearer token. See [MCP.md](MCP.md) for stdio and remote client configuration.
+
 ## Health
 
 ### `GET /health`

@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import Fastify from "fastify";
-import cors from "@fastify/cors";
 import { z } from "zod";
 import type { SessionLoopJob, TranscriptTurn } from "@open-bpo/core";
 import { createCallSession } from "@open-bpo/core";
@@ -19,6 +18,7 @@ import { listRecipeSummaries } from "./recipes";
 import { loadConfig } from "./config";
 import { buildDemoTranscript } from "./demo-data";
 import { registerConsoleRoutes } from "./console-routes";
+import { registerApiFoundation, registerMcpRoutes } from "./server";
 
 const callEndedSchema = z.object({
   callId: z.string().min(1),
@@ -136,7 +136,7 @@ async function main(): Promise<void> {
   const config = loadConfig();
   const app = Fastify({ logger: true });
 
-  await app.register(cors, { origin: true });
+  await registerApiFoundation(app, { env: process.env, title: "open-bpo API" });
 
   const pool = createPool(config.DATABASE_URL);
   await bootstrapWithRetry(() => ensureSchema(pool), app.log);
@@ -307,6 +307,8 @@ async function main(): Promise<void> {
       session
     });
   });
+
+  registerMcpRoutes(app, { env: process.env, apiUrl: `http://127.0.0.1:${config.API_PORT}` });
 
   await app.listen({ host: "0.0.0.0", port: config.API_PORT });
 }

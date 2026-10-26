@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { access } from "node:fs/promises";
 import path from "node:path";
-import cors from "@fastify/cors";
+import { pathToFileURL } from "node:url";
 import Fastify from "fastify";
 import { loadChecklist, scoreTranscriptAgainstChecklist, type ScoreResult } from "@open-bpo/qa";
 import { z } from "zod";
 import { buildDemoTranscript } from "./demo-data";
 import { listRecipeSummaries } from "./recipes";
 import { registerConsoleRoutes } from "./console-routes";
+import { registerApiFoundation, registerMcpRoutes } from "./server";
 
 type Direction = "inbound" | "outbound";
 type Transcript = ReturnType<typeof buildDemoTranscript>;
@@ -38,8 +39,6 @@ interface DemoSession {
   updatedAt: string;
 }
 
-const calls: DemoCall[] = [];
-const sessions: DemoSession[] = [];
 const checklistCache = new Map<string, Awaited<ReturnType<typeof loadChecklist>>>();
 
 async function resolveChecklistPath(recipeId: string): Promise<string> {
@@ -66,7 +65,7 @@ async function getChecklist(recipeId: string) {
   return checklist;
 }
 
-function advanceSession(session: DemoSession): void {
+function advanceSession(session: DemoSession, calls: DemoCall[]): void {
   const update = (state: DemoSession["state"], trace: string) => {
     session.state = state;
     session.trace.push(trace);
@@ -81,9 +80,12 @@ function advanceSession(session: DemoSession): void {
   }, 900);
 }
 
-async function main(): Promise<void> {
+export async function buildDemoApp(options: { env?: NodeJS.ProcessEnv; apiUrl?: string } = {}) {
+  const env = options.env ?? process.env;
   const app = Fastify({ logger: true });
-  await app.register(cors, { origin: true });
+  const calls: DemoCall[] = [];
+  const sessions: DemoSession[] = [];
+  await registerApiFoundation(app, { env, title: "open-bpo demo API" });
 
   app.get("/health", async () => ({ status: "ok", service: "open-bpo-demo-api" }));
   app.get("/v1/recipes", async () => ({ recipes: await listRecipeSummaries(process.cwd()) }));
@@ -159,15 +161,24 @@ async function main(): Promise<void> {
     sessions.unshift(session);
     calls.splice(200);
     sessions.splice(200);
-    advanceSession(session);
+    advanceSession(session, calls);
     return reply.code(202).send({ status: "queued", callId, direction, qaJobId: `demo-${callId}`, session: { sessionId, jobId: `demo-${sessionId}` } });
   });
 
-  await app.listen({ host: "0.0.0.0", port: 4017 });
-  console.log("demo API ready at http://127.0.0.1:4017");
+  registerMcpRoutes(app, { env, apiUrl: options.apiUrl ?? "http://127.0.0.1:4017" });
+  return app;
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+async function main(): Promise<void> {
+  const port = Number(process.env.DEMO_API_PORT ?? 4017);
+  const app = await buildDemoApp({ apiUrl: `http://127.0.0.1:${port}` });
+  await app.listen({ host: "0.0.0.0", port });
+  console.log(`demo API ready at http://127.0.0.1:${port}`);
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
