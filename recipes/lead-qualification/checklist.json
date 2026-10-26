@@ -27,13 +27,13 @@
       }
     },
     {
-      "id": "budget-check",
-      "title": "Agent checks budget",
+      "id": "scope-check",
+      "title": "Agent checks rollout scope",
       "maxScore": 20,
       "fatal": false,
       "rule": {
         "type": "keyword_any",
-        "keywords": ["budget", "monthly spend", "spend range", "kitna budget"]
+        "keywords": ["rollout scope", "call volume", "team size", "number of agents"]
       }
     },
     {
