@@ -1,0 +1,14 @@
+[
+  {
+    "name": "account_summary",
+    "description": "Fetch the approved minimum account summary for the reminder"
+  },
+  {
+    "name": "record_payment_status",
+    "description": "Record that payment is complete, planned, disputed, or unknown"
+  },
+  {
+    "name": "schedule_callback",
+    "description": "Schedule a human callback without collecting payment credentials"
+  }
+]
