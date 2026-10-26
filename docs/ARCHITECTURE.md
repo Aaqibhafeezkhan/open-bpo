@@ -69,7 +69,7 @@ open-bpo is an OSS baseline for building deployable AI-enabled BPO operations:
 - deterministic recipe scoring
 - local deployment story
 
-### In Qualia Cloud (closed)
+### In QualiaBits / CallPulse (commercial)
 - multi-tenant auth and billing
 - managed infra and dialer IP
 - production provider credentials and orchestration

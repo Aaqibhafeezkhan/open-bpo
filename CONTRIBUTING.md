@@ -6,8 +6,10 @@ Thanks for helping build open-bpo.
 
 ```bash
 pnpm install
+pnpm lint
 pnpm typecheck
 pnpm test
+pnpm build
 ```
 
 To run full local stack:
@@ -31,6 +33,7 @@ docker compose up --build
 ```bash
 pnpm typecheck
 pnpm test
+pnpm build
 ./scripts/demo-golden-path.sh
 ```
 
@@ -40,6 +43,8 @@ pnpm test
 - richer recipe packs and QA rubrics
 - observability and metrics
 - auth/tenant boundary hardening
+
+For scoped starter work, see the 20 [good first issue ideas](ROADMAP.md#good-first-issue-ideas). Please open or claim an issue before starting a broad provider or architecture change.
 
 ## Reporting security concerns
 
