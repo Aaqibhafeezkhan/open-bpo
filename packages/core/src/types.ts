@@ -1,6 +1,6 @@
 export type SessionState = "pending" | "assigned" | "active" | "completed" | "failed";
 
-export type SessionProvider = "twilio" | "livekit" | "mock";
+export type SessionProvider = "twilio" | "exotel" | "livekit" | "mock";
 
 export interface TranscriptTurn {
   speaker: "caller" | "agent";

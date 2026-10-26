@@ -8,12 +8,15 @@
   },
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts"
   },
   "dependencies": {
     "@open-bpo/core": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^24.9.1",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

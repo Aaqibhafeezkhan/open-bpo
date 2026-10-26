@@ -1,394 +1,116 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  fetchCallQa,
-  fetchCalls,
-  fetchRecipes,
-  fetchSessions,
-  triggerDemoCall,
-  type CallSummary,
-  type QaCallDetail,
-  type SessionSummary
+  fetchCallQa, fetchCalls, fetchProviderStatus, fetchRecipe, fetchRecipes, fetchSessions, triggerDemoCall,
+  type CallSummary, type ProviderGroup, type QaCallDetail, type RecipeDetail, type RecipeSummary, type SessionSummary
 } from "./api";
 
 const REFRESH_MS = 2500;
+type Route = { page: "overview" | "calls" | "live" | "recipes" | "connections"; id?: string };
 
-function formatDateTime(value: string): string {
-  return new Date(value).toLocaleString();
+function parseRoute(): Route {
+  const parts = window.location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+  if (parts[0] === "calls") return { page: "calls", ...(parts[1] ? { id: decodeURIComponent(parts[1]) } : {}) };
+  if (parts[0] === "live") return { page: "live" };
+  if (parts[0] === "recipes") return { page: "recipes", ...(parts[1] ? { id: decodeURIComponent(parts[1]) } : {}) };
+  if (parts[0] === "connections") return { page: "connections" };
+  return { page: "overview" };
+}
+function go(path: string) { window.location.hash = path; }
+function readable(value: string) { return value.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" "); }
+function shortTime(value: string) { return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(value)); }
+function fullTime(value: string) { return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)); }
+function duration(seconds: number) { return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`; }
+function friendlyCall(call: Pick<CallSummary, "recipeId" | "createdAt">) { return `${readable(call.recipeId)} · ${shortTime(call.createdAt)}`; }
+
+function Verdict({ verdict, children }: { verdict: string | null; children?: ReactNode }) {
+  const kind = verdict === "pass" ? "pass" : verdict === "warning" ? "warning" : verdict === "fail" ? "fail" : verdict === "live" ? "live" : "pending";
+  return <span className={`verdict ${kind}`}>{children ?? (verdict || "pending")}</span>;
+}
+function Steps({ state, scored = false }: { state: string | null; scored?: boolean }) {
+  const steps = ["pending", "assigned", "active", "completed", ...(scored ? ["scored"] : [])];
+  const current = scored ? steps.length - 1 : Math.max(0, steps.indexOf(state || "pending"));
+  return <div className="steps">{steps.map((step, index) => <span key={step} className={index < current ? "done" : index === current ? "current" : ""}>{step}</span>)}</div>;
+}
+function Empty({ children }: { children: ReactNode }) { return <p className="empty">{children}</p>; }
+
+function CallTable({ calls, selectedId, onSelect, limit }: { calls: CallSummary[]; selectedId?: string | undefined; onSelect?: (call: CallSummary) => void; limit?: number }) {
+  return <div className="table-wrap">
+    <div className="call-row table-head"><span>Call</span><span>Recipe</span><span>Direction</span><span>Length</span><span>QA score</span><span>When</span></div>
+    {calls.slice(0, limit).map((call) => <button type="button" className={`call-row ${selectedId === call.callId ? "selected" : ""}`} key={call.callId} onClick={() => onSelect ? onSelect(call) : go(`/calls/${encodeURIComponent(call.callId)}`)}>
+      <strong>{friendlyCall(call)}</strong><span>{readable(call.recipeId)}</span><span className="muted">{call.direction === "outbound" ? "↗" : "↙"} {call.direction}</span><span className="mono normal">{duration(call.durationSeconds)}</span><span><Verdict verdict={call.verdict} /> <b>{call.qaPercent === null ? "—" : `${Math.round(call.qaPercent)}%`}</b></span><span className="muted">{shortTime(call.createdAt)}</span>
+    </button>)}
+    {calls.length === 0 && <Empty>No calls yet. Start a demo call to create one.</Empty>}
+  </div>;
 }
 
-function verdictClass(verdict: string | null): string {
-  if (verdict === "pass") return "badge-pass";
-  if (verdict === "warning") return "badge-warning";
-  if (verdict === "fail") return "badge-fail";
-  return "badge-neutral";
+function Rail({ route }: { route: Route }) {
+  const links: Array<[Route["page"], string, string]> = [["overview", "HOME", "/"], ["calls", "CALLS", "/calls"], ["live", "LIVE", "/live"], ["recipes", "RCPE", "/recipes"], ["connections", "CONN", "/connections"]];
+  return <nav className="rail card"><div className="logo">ob</div>{links.map(([page, label, path]) => <button type="button" title={readable(page)} key={page} className={route.page === page ? "active" : ""} onClick={() => go(path)}>{label}</button>)}</nav>;
+}
+function TopBar({ route, liveCount, callCount, onDemo }: { route: Route; liveCount: number; callCount: number; onDemo: () => void }) {
+  const title = route.page === "calls" && route.id ? "Call detail" : route.id ? readable(route.id) : route.page === "live" ? "Live sessions" : readable(route.page);
+  return <header className="top card"><span className="mode"><i /> Demo mode</span><div><div className="mono">open-bpo · operations console</div><b className="top-title">{title}</b></div><span className="top-spacer" /><span className="muted top-count">{liveCount} live · {callCount} calls</span><button type="button" className="pill dark" onClick={onDemo}>+ Start a demo call <kbd>N</kbd></button></header>;
+}
+
+function Overview({ calls, sessions }: { calls: CallSummary[]; sessions: SessionSummary[] }) {
+  const live = sessions.filter((session) => ["pending", "assigned", "active"].includes(session.state));
+  const scored = calls.filter((call) => call.qaPercent !== null);
+  const passRate = scored.length ? Math.round(scored.filter((call) => call.verdict === "pass").length / scored.length * 100) : 0;
+  const needsLook = calls.filter((call) => call.hasFatalErrors || call.verdict === "fail");
+  const recipeRates = Array.from(new Set(calls.map((call) => call.recipeId))).map((recipeId) => { const group = calls.filter((call) => call.recipeId === recipeId && call.verdict); return { recipeId, rate: group.length ? Math.round(group.filter((call) => call.verdict === "pass").length / group.length * 100) : 0 }; });
+  const stats: Array<[string, string | number, string]> = [["Calls", calls.length, "recent records"], ["QA pass rate", `${passRate}%`, "completed scores"], ["Fatal flags", calls.filter((call) => call.hasFatalErrors).length, "need review"], ["Live now", live.length, `${live.filter((session) => session.state === "active").length} active`]];
+  return <main className="main overview-grid"><section className="overview-main"><div className="stats">{stats.map(([label, value, note]) => <div className="card stat" key={label}><span className="mono">{label}</span><div className="big">{value}</div><small className="muted">{note}</small></div>)}</div><div className="card recent"><div className="section-title"><h2>Recent calls</h2><button className="pill" onClick={() => go("/calls")}>See all calls →</button></div><CallTable calls={calls} limit={7} /></div></section><aside className="overview-side"><div className="card"><div className="section-title"><span className="mono">Live now</span><span className="verdict live">{live.length}</span></div>{live.map((session) => <button className="list-item" key={session.sessionId} onClick={() => go("/live")}><span><b>{readable(session.recipeId)}</b><small>{session.state} · {session.direction}</small></span><Verdict verdict={session.state === "active" ? "live" : null}>{session.state}</Verdict></button>)}{live.length === 0 && <Empty>No sessions are live.</Empty>}</div><div className="card"><span className="mono">Needs a look</span>{needsLook.slice(0, 3).map((call) => <button className="list-item alert" key={call.callId} onClick={() => go(`/calls/${encodeURIComponent(call.callId)}`)}><i>!</i><span><b>{friendlyCall(call)}</b><small>{call.hasFatalErrors ? "Fatal checklist item" : "QA score below target"}</small></span></button>)}{needsLook.length === 0 && <Empty>No flagged calls.</Empty>}</div><div className="card rates"><span className="mono">Pass rate by recipe</span>{recipeRates.map(({ recipeId, rate }) => <div className="rate" key={recipeId}><span><b>{readable(recipeId)}</b><small>{rate}%</small></span><div className="bar"><i style={{ width: `${rate}%` }} /></div></div>)}{recipeRates.length === 0 && <Empty>No scored recipes yet.</Empty>}</div></aside></main>;
+}
+
+function CallsPage({ calls }: { calls: CallSummary[] }) {
+  const [filter, setFilter] = useState("all"); const [query, setQuery] = useState(""); const [selected, setSelected] = useState(0); const searchRef = useRef<HTMLInputElement>(null);
+  const shown = useMemo(() => calls.filter((call) => (filter === "all" || (filter === "pending" ? call.verdict === null : call.verdict === filter)) && `${call.callId} ${call.recipeId}`.toLowerCase().includes(query.toLowerCase())), [calls, filter, query]);
+  useEffect(() => { const handler = (event: KeyboardEvent) => { if (event.key === "/" && document.activeElement !== searchRef.current) { event.preventDefault(); searchRef.current?.focus(); } if (document.activeElement === searchRef.current) return; if (event.key.toLowerCase() === "j") setSelected((value) => Math.min(shown.length - 1, value + 1)); if (event.key.toLowerCase() === "k") setSelected((value) => Math.max(0, value - 1)); if (event.key === "Enter" && shown[selected]) go(`/calls/${encodeURIComponent(shown[selected].callId)}`); }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [selected, shown]);
+  useEffect(() => setSelected(0), [filter, query]);
+  return <main className="main"><section className="card calls-page"><div className="calls-toolbar"><h2>All calls</h2><span className="muted">{shown.length} records</span><span className="top-spacer" /><label className="search"><input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search recipe or call ID" /><kbd>/</kbd></label></div><div className="filters"><div className="segments">{["all", "pass", "warning", "fail", "pending"].map((value) => <button className={filter === value ? "active" : ""} onClick={() => setFilter(value)} key={value}>{value}</button>)}</div><span className="top-spacer" /><span className="muted key-help">J / K to move · Enter to open</span></div><CallTable calls={shown} selectedId={shown[selected]?.callId} onSelect={(call) => go(`/calls/${encodeURIComponent(call.callId)}`)} /></section></main>;
+}
+
+function CallDetail({ callId, calls, sessions, recipes }: { callId: string; calls: CallSummary[]; sessions: SessionSummary[]; recipes: Record<string, RecipeDetail> }) {
+  const [detail, setDetail] = useState<QaCallDetail | null>(null); const [pending, setPending] = useState(true); const [raw, setRaw] = useState(false);
+  const summary = calls.find((call) => call.callId === callId); const session = sessions.find((item) => item.callId === callId);
+  useEffect(() => { let active = true; const load = () => fetchCallQa(callId).then((result) => { if (!active) return; setPending(result.status === "pending"); setDetail(result.call ?? null); }).catch(() => { if (active) setPending(false); }); load(); const timer = window.setInterval(load, REFRESH_MS); return () => { active = false; window.clearInterval(timer); }; }, [callId]);
+  if (!summary && !pending) return <main className="main"><section className="card"><h1>Call not found</h1></section></main>;
+  if (!summary) return <main className="main"><section className="card"><Empty>Loading call…</Empty></section></main>;
+  const checklist = recipes[summary.recipeId]?.checklist.items ?? []; const breakdown = detail?.qa?.result.breakdown ?? []; const failed = breakdown.find((item) => item.score < item.maxScore);
+  return <main className="main detail-grid"><section className="detail-left"><div className="card call-hero"><div><span className="mono">{readable(summary.recipeId)} · {summary.direction === "outbound" ? "↗" : "↙"} {summary.direction} · {duration(summary.durationSeconds)} · {session?.provider ?? "mock"} provider</span><h1>{friendlyCall(summary)}</h1><p className="muted mono normal">{summary.callId} · {fullTime(summary.createdAt)}</p></div><div className="score"><Verdict verdict={detail?.qa?.verdict ?? summary.verdict} /><strong>{detail?.qa?.qaPercent === undefined ? "—" : Math.round(detail.qa.qaPercent)}<small>/100</small></strong></div><Steps state={session?.state ?? summary.latestSessionState} scored={Boolean(detail?.qa)} /></div><div className="card transcript"><div className="section-title"><span className="mono">Transcript</span><button className="pill" onClick={() => setRaw((value) => !value)}>Raw trace</button></div>{raw ? <pre className="trace">{session?.trace?.join("\n") || "Trace not available."}</pre> : detail?.transcript.map((turn, index) => <p key={`${turn.timestamp}-${index}`}><b className={turn.speaker === "agent" ? "agent" : ""}>{turn.speaker === "agent" ? "Agent" : "Caller"}</b> · {turn.text}</p>)}{pending && <Empty>Scoring is in progress…</Empty>}</div></section><aside className="card checklist"><div className="section-title"><span className="mono">QA checklist · {recipes[summary.recipeId]?.checklist.version ?? "current"}</span><span className="muted">pass ≥ {recipes[summary.recipeId]?.checklist.passThreshold ?? 90}</span></div>{breakdown.map((item) => { const spec = checklist.find((entry) => entry.id === item.id); const matched = item.score >= item.maxScore; return <div className="check" key={item.id}><i className={matched ? "yes" : "no"}>{matched ? "✓" : "×"}</i><span><b>{item.title}</b><small>{item.rationale}</small></span><span className={spec?.fatal ? "verdict fail" : "mono normal"}>{spec?.fatal ? "fatal" : `${item.score}/${item.maxScore}`}</span></div>; })}{!pending && breakdown.length === 0 && <Empty>No checklist result is available.</Empty>}{failed && <div className="tip"><span className="mono">To improve</span><br />Address “{failed.title.toLowerCase()}” clearly before closing.</div>}<div className="detail-actions"><button className="pill" disabled title="Coming soon">Mark reviewed · coming soon</button><button className="pill" disabled title="Coming soon">Re-score · coming soon</button><button className="pill" onClick={() => go(`/recipes/${encodeURIComponent(summary.recipeId)}`)}>Open recipe</button></div></aside></main>;
+}
+
+function LivePage({ sessions }: { sessions: SessionSummary[] }) {
+  const relevant = sessions.filter((session) => ["pending", "assigned", "active"].includes(session.state)); const choices = relevant.length ? relevant : sessions.slice(0, 4); const [selectedId, setSelectedId] = useState<string | null>(choices[0]?.sessionId ?? null);
+  useEffect(() => { if (!selectedId && choices[0]) setSelectedId(choices[0].sessionId); }, [choices, selectedId]); const selected = sessions.find((session) => session.sessionId === selectedId) ?? choices[0];
+  return <main className="main live-grid"><aside className="session-list">{choices.map((session) => <button className={`card session-card ${session.sessionId === selected?.sessionId ? "selected" : ""}`} onClick={() => setSelectedId(session.sessionId)} key={session.sessionId}><span><Verdict verdict={session.state === "active" ? "live" : null}>{session.state === "active" ? "● live" : session.state}</Verdict><span className="mono">{readable(session.recipeId)}</span></span><h2>{readable(session.recipeId)} · {shortTime(session.createdAt)}</h2><p className="muted">{session.state === "active" ? "Conversation in progress" : readable(session.state)}</p></button>)}<div className="card state-help"><span className="mono">Session states</span><p className="muted">pending → assigned → active → completed or failed. Calls are scored when they end.</p></div></aside>{selected ? <section className="live-detail"><div className="card live-hero"><div><Verdict verdict={selected.state === "active" ? "live" : null}>{selected.state === "active" ? "● live" : selected.state}</Verdict><h1>{readable(selected.recipeId)} · {shortTime(selected.createdAt)}</h1><p className="muted">{readable(selected.recipeId)} · {selected.direction} · {selected.provider} provider</p></div><div className="detail-actions"><button className="pill" disabled>Listen in · coming soon</button><button className="pill red" disabled>End session · coming soon</button></div><Steps state={selected.state} /></div><div className="live-panels"><div className="card transcript"><span className="mono">Live transcript</span>{selected.turns?.map((turn, index) => <p key={index}><b className={turn.speaker === "agent" ? "agent" : ""}>{readable(turn.speaker)}</b> · {turn.text}</p>) ?? <Empty>Transcript appears when the session completes.</Empty>}</div><div className="card"><span className="mono">Trace</span><pre className="trace">{selected.trace?.join("\n") || "Waiting for trace events…"}</pre></div></div></section> : <section className="card"><Empty>No sessions yet. Start a demo call to see the session lifecycle.</Empty></section>}</main>;
+}
+
+function RecipesPage({ summaries, recipes, calls }: { summaries: RecipeSummary[]; recipes: Record<string, RecipeDetail>; calls: CallSummary[] }) {
+  return <main className="main recipes-page"><div className="page-heading"><h1>Recipes</h1><span className="muted">Each recipe combines a prompt, a QA checklist and a set of tools.</span></div><div className="recipe-cards">{summaries.map((summary) => { const detail = recipes[summary.id]; const related = calls.filter((call) => call.recipeId === summary.id && call.verdict); const rate = related.length ? Math.round(related.filter((call) => call.verdict === "pass").length / related.length * 100) : 0; return <button className="card recipe-card" key={summary.id} onClick={() => go(`/recipes/${encodeURIComponent(summary.id)}`)}><span className="mono normal">recipes/{summary.id}</span><h2>{readable(summary.id)}</h2><p className="muted description">{detail?.checklist.description ?? "Loading recipe…"}</p><div className="recipe-meta"><span><small className="mono">Checks</small><b>{detail?.checklist.items.length ?? "—"} · {detail?.checklist.items.filter((item) => item.fatal).length ?? "—"} fatal</b></span><span><small className="mono">Scored calls</small><b>{related.length}</b></span></div><span className="mono">Tools</span><div className="tool-tags">{detail?.tools.map((tool) => <span key={tool.name}>{tool.name}</span>)}</div><div className="rate"><span><small className="mono">Pass rate</small><b>{rate}%</b></span><div className="bar"><i style={{ width: `${rate}%` }} /></div></div></button>; })}</div></main>;
+}
+function RecipeDetailPage({ recipeId, detail, onDemo }: { recipeId: string; detail?: RecipeDetail | undefined; onDemo: () => void }) {
+  if (!detail) return <main className="main"><section className="card"><Empty>Loading recipe…</Empty></section></main>;
+  return <main className="main recipe-detail"><section className="recipe-prompt"><div className="card recipe-hero"><span className="mono normal">recipes/{recipeId} · v{detail.checklist.version}</span><h1>{readable(recipeId)}</h1><button className="pill dark" onClick={onDemo}>Try it in a demo call</button></div><div className="card prompt"><div className="section-title"><span className="mono">Agent prompt · prompt.md</span><span className="verdict pending">read-only</span></div><pre>{detail.prompt}</pre></div></section><aside className="recipe-aside"><div className="card checklist"><div className="section-title"><span className="mono">QA checklist · checklist.json</span><span className="muted">pass ≥ {detail.checklist.passThreshold}</span></div>{detail.checklist.items.map((item) => <div className="check" key={item.id}><i className={item.fatal ? "no" : "yes"}>{item.fatal ? "!" : "✓"}</i><span><b>{item.title}</b><small>{item.rule.type.replaceAll("_", " ")} rule</small></span><span className={item.fatal ? "verdict fail" : "mono normal"}>{item.fatal ? "fatal" : `${item.maxScore} pts`}</span></div>)}</div><div className="card tools"><span className="mono">Tools · tools.json</span>{detail.tools.map((tool) => <div className="list-item static" key={tool.name}><span><b className="mono normal">{tool.name}</b><small>{tool.description}</small></span></div>)}</div></aside></main>;
+}
+function ConnectionsPage({ groups }: { groups: ProviderGroup[] }) {
+  return <main className="main connections"><div className="page-heading"><h1>Connections</h1><span className="muted">Provider status is read from the server environment.</span></div><div className="connection-cards">{groups.map((group) => <section className="card" key={group.id}><h2>{group.name}</h2>{group.providers.map((provider) => <div className="list-item static" key={provider.id}><b>{provider.name}</b><Verdict verdict={provider.configured ? "pass" : null}>{provider.configured ? "configured" : "not configured"}</Verdict></div>)}</section>)}</div><div className="privacy-note"><span className="mono">Secrets stay on the server</span><br />Only configuration status is shown here.</div></main>;
+}
+
+function DemoModal({ summaries, details, onClose, onCreated }: { summaries: RecipeSummary[]; details: Record<string, RecipeDetail>; onClose: () => void; onCreated: (callId: string) => void }) {
+  const [direction, setDirection] = useState<"inbound" | "outbound">("inbound"); const [recipeId, setRecipeId] = useState(summaries[0]?.id ?? "lead-qualification"); const [provider, setProvider] = useState<"mock" | "twilio" | "livekit">("mock"); const [working, setWorking] = useState(false); const [error, setError] = useState<string | null>(null);
+  useEffect(() => { const handler = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [onClose]);
+  const start = async () => { setWorking(true); setError(null); try { const result = await triggerDemoCall({ direction, recipeId, provider }); onCreated(result.callId); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not start demo call"); setWorking(false); } };
+  return <div className="scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="card modal" role="dialog" aria-modal="true"><span className="mono">Start a demo call</span><h1>Try a recipe end to end</h1><p className="muted description">A simulated call runs, gets scored against its checklist and appears in Calls.</p><span className="mono field-label">Direction</span><div className="segments"><button className={direction === "inbound" ? "active" : ""} onClick={() => setDirection("inbound")}>↙ Inbound</button><button className={direction === "outbound" ? "active" : ""} onClick={() => setDirection("outbound")}>↗ Outbound</button></div><span className="mono field-label">Recipe</span><div className="modal-recipes">{summaries.map((recipe) => <button className={recipeId === recipe.id ? "active" : ""} key={recipe.id} onClick={() => setRecipeId(recipe.id)}><b>{readable(recipe.id)}</b><small>{details[recipe.id]?.checklist.items.length ?? "—"} checks</small></button>)}</div><span className="mono field-label">Provider</span><div className="segments"><button className={provider === "mock" ? "active" : ""} onClick={() => setProvider("mock")}>Mock</button><button className={provider === "twilio" ? "active" : ""} onClick={() => setProvider("twilio")}>Twilio</button><button className={provider === "livekit" ? "active" : ""} onClick={() => setProvider("livekit")}>LiveKit</button></div>{error && <p className="error">{error}</p>}<div className="modal-actions"><button className="pill dark large" disabled={working} onClick={start}>{working ? "Starting…" : `Start ${direction} call`}</button><button className="pill large" onClick={onClose}>Cancel</button></div></div></div>;
 }
 
 export function App() {
-  const [calls, setCalls] = useState<CallSummary[]>([]);
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
-  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [selectedRecipeId, setSelectedRecipeId] = useState("lead-qualification");
-  const [selectedProvider, setSelectedProvider] = useState<"twilio" | "livekit" | "mock">("mock");
-  const [recipes, setRecipes] = useState<string[]>([]);
-  const [qaDetail, setQaDetail] = useState<QaCallDetail | null>(null);
-  const [qaStatus, setQaStatus] = useState<"idle" | "pending" | "ready">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  async function refreshOverview(): Promise<void> {
-    try {
-      const [loadedCalls, loadedSessions] = await Promise.all([fetchCalls(), fetchSessions()]);
-      setCalls(loadedCalls);
-      setSessions(loadedSessions);
-
-      const firstCall = loadedCalls[0];
-      if (!selectedCallId && firstCall) {
-        setSelectedCallId(firstCall.callId);
-      }
-
-      const firstSession = loadedSessions[0];
-      if (!selectedSessionId && firstSession) {
-        setSelectedSessionId(firstSession.sessionId);
-      }
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Failed to load overview");
-    }
-  }
-
-  useEffect(() => {
-    fetchRecipes()
-      .then((loadedRecipes) => {
-        setRecipes(loadedRecipes);
-        const firstRecipe = loadedRecipes[0];
-        if (firstRecipe) {
-          setSelectedRecipeId(firstRecipe);
-        }
-      })
-      .catch(() => undefined);
-
-    refreshOverview().catch(() => undefined);
-
-    const interval = window.setInterval(() => {
-      refreshOverview().catch(() => undefined);
-    }, REFRESH_MS);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!selectedCallId) {
-      setQaDetail(null);
-      setQaStatus("idle");
-      return;
-    }
-    const callId = selectedCallId;
-
-    let cancelled = false;
-
-    async function refreshQa(): Promise<void> {
-      try {
-        const result = await fetchCallQa(callId);
-
-        if (cancelled) {
-          return;
-        }
-
-        if (result.status === "pending") {
-          setQaStatus("pending");
-          setQaDetail(null);
-          return;
-        }
-
-        setQaStatus("ready");
-        setQaDetail(result.call ?? null);
-      } catch (qaError) {
-        if (!cancelled) {
-          setError(qaError instanceof Error ? qaError.message : "Failed to fetch QA detail");
-        }
-      }
-    }
-
-    refreshQa().catch(() => undefined);
-
-    const interval = window.setInterval(() => {
-      refreshQa().catch(() => undefined);
-    }, REFRESH_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [selectedCallId]);
-
-  const selectedCall = useMemo(
-    () => calls.find((call) => call.callId === selectedCallId) ?? null,
-    [calls, selectedCallId]
-  );
-
-  const selectedSession = useMemo(
-    () => sessions.find((session) => session.sessionId === selectedSessionId) ?? null,
-    [sessions, selectedSessionId]
-  );
-
-  return (
-    <div className="page">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">open-bpo / QualiaBits</p>
-          <h1>AI BPO Operations Console</h1>
-          <p className="subtitle">
-            Local mock deployment with inbound/outbound call simulation, live session lifecycle, checklist QA scoring, and
-            reproducible APIs.
-          </p>
-        </div>
-
-        <div className="hero-controls">
-          <label>
-            Recipe
-            <select value={selectedRecipeId} onChange={(event) => setSelectedRecipeId(event.target.value)}>
-              {recipes.map((recipeId) => (
-                <option key={recipeId} value={recipeId}>
-                  {recipeId}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Provider
-            <select
-              value={selectedProvider}
-              onChange={(event) => setSelectedProvider(event.target.value as "twilio" | "livekit" | "mock")}
-            >
-              <option value="mock">mock</option>
-              <option value="twilio">twilio-stub</option>
-              <option value="livekit">livekit-stub</option>
-            </select>
-          </label>
-
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={async () => {
-              setIsSubmitting(true);
-              setError(null);
-              try {
-                const result = await triggerDemoCall({
-                  direction: "inbound",
-                  recipeId: selectedRecipeId,
-                  provider: selectedProvider
-                });
-                await refreshOverview();
-                setSelectedCallId(result.callId);
-                if (result.sessionId) {
-                  setSelectedSessionId(result.sessionId);
-                }
-              } catch (submitError) {
-                setError(submitError instanceof Error ? submitError.message : "Failed to create inbound demo");
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
-          >
-            {isSubmitting ? "Working…" : "Simulate inbound call"}
-          </button>
-
-          <button
-            type="button"
-            disabled={isSubmitting}
-            className="secondary"
-            onClick={async () => {
-              setIsSubmitting(true);
-              setError(null);
-              try {
-                const result = await triggerDemoCall({
-                  direction: "outbound",
-                  recipeId: selectedRecipeId,
-                  provider: selectedProvider
-                });
-                await refreshOverview();
-                setSelectedCallId(result.callId);
-                if (result.sessionId) {
-                  setSelectedSessionId(result.sessionId);
-                }
-              } catch (submitError) {
-                setError(submitError instanceof Error ? submitError.message : "Failed to create outbound demo");
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
-          >
-            {isSubmitting ? "Working…" : "Simulate outbound call"}
-          </button>
-        </div>
-      </header>
-
-      {error && <div className="error-banner">{error}</div>}
-
-      <main className="layout-grid">
-        <section className="panel calls">
-          <div className="panel-header">
-            <h2>Calls</h2>
-            <span>{calls.length} records</span>
-          </div>
-
-          {calls.length === 0 ? (
-            <p className="empty">No calls yet. Trigger inbound or outbound simulation.</p>
-          ) : (
-            <ul className="call-list">
-              {calls.map((call) => (
-                <li key={call.callId}>
-                  <button
-                    type="button"
-                    className={call.callId === selectedCallId ? "call-item active" : "call-item"}
-                    onClick={() => setSelectedCallId(call.callId)}
-                  >
-                    <div>
-                      <strong>{call.callId}</strong>
-                      <p>
-                        {call.direction.toUpperCase()} • {formatDateTime(call.createdAt)}
-                      </p>
-                    </div>
-                    <div className="call-meta">
-                      <span className={`mini-badge ${verdictClass(call.verdict)}`}>
-                        {call.qaPercent === null ? "PENDING" : `${Math.round(call.qaPercent)}%`}
-                      </span>
-                      <span className="mini-badge badge-neutral">{call.latestSessionState ?? "no-session"}</span>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="panel qa">
-          <div className="panel-header">
-            <h2>QA Detail</h2>
-            <span>{selectedCall?.recipeId ?? "-"}</span>
-          </div>
-
-          {!selectedCall ? (
-            <p className="empty">Select a call to inspect QA details.</p>
-          ) : qaStatus === "pending" ? (
-            <p className="empty">Scoring call {selectedCall.callId}...</p>
-          ) : !qaDetail?.qa ? (
-            <p className="empty">No QA result yet for this call.</p>
-          ) : (
-            <>
-              <div className="qa-summary">
-                <div>
-                  <p className="label">Verdict</p>
-                  <p className={`verdict ${qaDetail.qa.verdict}`}>{qaDetail.qa.verdict.toUpperCase()}</p>
-                </div>
-                <div>
-                  <p className="label">Score</p>
-                  <p>
-                    {qaDetail.qa.finalScore}/{qaDetail.qa.maxPossible} ({qaDetail.qa.qaPercent}%)
-                  </p>
-                </div>
-                <div>
-                  <p className="label">Fatal errors</p>
-                  <p>{qaDetail.qa.hasFatalErrors ? "Yes" : "No"}</p>
-                </div>
-              </div>
-
-              <h3>Transcript</h3>
-              <ul className="transcript-list">
-                {qaDetail.transcript.map((turn, index) => (
-                  <li key={`${turn.timestamp}-${index}`}>
-                    <span className="speaker">{turn.speaker}</span>
-                    <p>{turn.text}</p>
-                  </li>
-                ))}
-              </ul>
-
-              <h3>Checklist breakdown</h3>
-              <ul className="breakdown-list">
-                {qaDetail.qa.result.breakdown.map((item) => (
-                  <li key={item.id}>
-                    <div className="breakdown-top">
-                      <strong>{item.title}</strong>
-                      <span>
-                        {item.score}/{item.maxScore}
-                      </span>
-                    </div>
-                    <p>{item.rationale}</p>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </section>
-
-        <section className="panel sessions">
-          <div className="panel-header">
-            <h2>Live Sessions</h2>
-            <span>{sessions.length} records</span>
-          </div>
-
-          {sessions.length === 0 ? (
-            <p className="empty">No sessions yet. Demo calls can auto-create sessions.</p>
-          ) : (
-            <div className="session-layout">
-              <ul className="session-list">
-                {sessions.map((session) => (
-                  <li key={session.sessionId}>
-                    <button
-                      type="button"
-                      className={session.sessionId === selectedSessionId ? "session-item active" : "session-item"}
-                      onClick={() => setSelectedSessionId(session.sessionId)}
-                    >
-                      <strong>{session.sessionId.slice(0, 8)}…</strong>
-                      <p>{session.callId}</p>
-                      <span className="mini-badge badge-neutral">{session.state}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="session-detail">
-                {!selectedSession ? (
-                  <p className="empty">Select a session to inspect trace.</p>
-                ) : (
-                  <>
-                    <p>
-                      <strong>Call:</strong> {selectedSession.callId}
-                    </p>
-                    <p>
-                      <strong>Direction:</strong> {selectedSession.direction}
-                    </p>
-                    <p>
-                      <strong>Provider:</strong> {selectedSession.provider}
-                    </p>
-                    <p>
-                      <strong>State:</strong> {selectedSession.state}
-                    </p>
-                    <p>
-                      <strong>External ID:</strong> {selectedSession.externalSessionId ?? "-"}
-                    </p>
-                    <p>
-                      <strong>Updated:</strong> {formatDateTime(selectedSession.updatedAt)}
-                    </p>
-                    {selectedSession.error && <p className="session-error">{selectedSession.error}</p>}
-
-                    <h3>Trace</h3>
-                    {selectedSession.trace && selectedSession.trace.length > 0 ? (
-                      <pre>{selectedSession.trace.join("\n")}</pre>
-                    ) : (
-                      <p className="empty">Trace not available yet.</p>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-      </main>
-    </div>
-  );
+  const [route, setRoute] = useState(parseRoute); const [calls, setCalls] = useState<CallSummary[]>([]); const [sessions, setSessions] = useState<SessionSummary[]>([]); const [summaries, setSummaries] = useState<RecipeSummary[]>([]); const [recipes, setRecipes] = useState<Record<string, RecipeDetail>>({}); const [providers, setProviders] = useState<ProviderGroup[]>([]); const [modal, setModal] = useState(false); const [error, setError] = useState<string | null>(null);
+  const refresh = async () => { const [nextCalls, nextSessions] = await Promise.all([fetchCalls(), fetchSessions()]); setCalls(nextCalls); setSessions(nextSessions); };
+  useEffect(() => { const handler = () => setRoute(parseRoute()); window.addEventListener("hashchange", handler); if (!window.location.hash) go("/"); return () => window.removeEventListener("hashchange", handler); }, []);
+  useEffect(() => { let active = true; fetchRecipes().then(async (next) => { if (!active) return; setSummaries(next); const loaded = await Promise.all(next.map((recipe) => fetchRecipe(recipe.id))); if (active) setRecipes(Object.fromEntries(loaded.map((recipe) => [recipe.id, recipe]))); }).catch((cause) => setError(cause instanceof Error ? cause.message : "Failed to load recipes")); fetchProviderStatus().then(setProviders).catch(() => undefined); refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Failed to load console")); const timer = window.setInterval(() => refresh().catch(() => undefined), REFRESH_MS); return () => { active = false; window.clearInterval(timer); }; }, []);
+  useEffect(() => { const handler = (event: KeyboardEvent) => { const target = event.target as HTMLElement | null; if (event.key.toLowerCase() === "n" && !modal && target?.tagName !== "INPUT" && target?.tagName !== "TEXTAREA") { event.preventDefault(); setModal(true); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, [modal]);
+  const liveCount = sessions.filter((session) => ["pending", "assigned", "active"].includes(session.state)).length; let page: ReactNode;
+  if (route.page === "overview") page = <Overview calls={calls} sessions={sessions} />; else if (route.page === "calls" && route.id) page = <CallDetail callId={route.id} calls={calls} sessions={sessions} recipes={recipes} />; else if (route.page === "calls") page = <CallsPage calls={calls} />; else if (route.page === "live") page = <LivePage sessions={sessions} />; else if (route.page === "recipes" && route.id) page = <RecipeDetailPage recipeId={route.id} detail={recipes[route.id]} onDemo={() => setModal(true)} />; else if (route.page === "recipes") page = <RecipesPage summaries={summaries} recipes={recipes} calls={calls} />; else page = <ConnectionsPage groups={providers} />;
+  return <div className="shell"><Rail route={route} /><TopBar route={route} liveCount={liveCount} callCount={calls.length} onDemo={() => setModal(true)} />{error && <button className="error-banner" onClick={() => setError(null)}>{error} · dismiss</button>}{page}{modal && <DemoModal summaries={summaries} details={recipes} onClose={() => setModal(false)} onCreated={(callId) => { setModal(false); refresh().finally(() => go(`/calls/${encodeURIComponent(callId)}`)); }} />}</div>;
 }

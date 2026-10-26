@@ -1,43 +1,77 @@
-# open-bpo
+<p align="center">
+  <img src="docs/assets/hero.png" alt="open-bpo: open-source AI call centre" width="100%">
+</p>
 
-[![CI](https://github.com/nitturkaryash/open-bpo/actions/workflows/ci.yml/badge.svg)](https://github.com/nitturkaryash/open-bpo/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/nitturkaryash/open-bpo)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/nitturkaryash/open-bpo?style=social)](https://github.com/nitturkaryash/open-bpo/stargazers)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+<h3 align="center">Run an AI call centre on your laptop. Open source, no API keys.</h3>
 
-**Open-source AI call centre: run an AI BPO floor on your laptop in one afternoon.**
+<p align="center">
+  <a href="#quickstart">Quickstart</a> ·
+  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+  <a href="docs/RECIPE_AUTHORING.md">Recipes</a> ·
+  <a href="docs/API_REFERENCE.md">API</a> ·
+  <a href="ROADMAP.md">Roadmap</a>
+</p>
 
-open-bpo is a self-hostable scaffold for mock voice sessions, deterministic checklist QA, and call operations. The default demo needs no API keys or infrastructure services.
+<p align="center">
+  <a href="https://github.com/nitturkaryash/open-bpo/actions/workflows/ci.yml"><img src="https://github.com/nitturkaryash/open-bpo/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/nitturkaryash/open-bpo" alt="License"></a>
+  <a href="https://github.com/nitturkaryash/open-bpo/stargazers"><img src="https://img.shields.io/github/stars/nitturkaryash/open-bpo?style=social" alt="Stars"></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
+</p>
 
-![open-bpo QA operations console](docs/assets/console.png)
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="Simulated calls streaming into the open-bpo console with QA scores" width="100%">
+</p>
 
-## 30-second quickstart
+## Quickstart
 
-Requirements: Node.js 20+ and pnpm 10.
+Needs Node.js 20+ and pnpm 10.
 
 ```bash
+git clone https://github.com/nitturkaryash/open-bpo.git && cd open-bpo
 pnpm install
 pnpm demo
 ```
 
-Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Fake inbound and outbound calls stream into the dashboard with session traces and deterministic QA scores. Stop all three local processes with `Ctrl+C`.
+Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Simulated inbound and outbound calls stream into the console with session traces and QA scores. `Ctrl+C` stops everything.
 
-## Why open-bpo
+## What you get
 
-Voice-agent demos often stop at a conversation. A BPO floor also needs queues, session state, repeatable QA, operational APIs, and a console. open-bpo keeps those pieces small enough to understand and replaces external services with mocks, so a developer can run and change the complete path locally before connecting real providers.
+- [x] Inbound and outbound call simulation. [Quickstart](docs/QUICKSTART.md)
+- [x] Deterministic QA: versioned checklists with fatal checks. Same call, same score. [Examples](docs/QA_CHECKLISTS.md)
+- [x] Operations console for calls, sessions, traces and QA breakdowns
+- [x] Swappable telephony, STT, TTS and LLM interfaces. [Provider guide](docs/PROVIDERS.md)
+- [x] Recipes as folders: prompt, tools, QA policy. [Authoring guide](docs/RECIPE_AUTHORING.md)
+  - [x] Lead qualification
+  - [x] Support resolution
+  - [x] Payment reminders
+- [x] Fastify API and BullMQ workers on Postgres and Redis. [API reference](docs/API_REFERENCE.md)
+- [ ] Real telephony and speech adapters (only mocks and stubs ship today, see [ROADMAP.md](ROADMAP.md))
 
-## Features
+<p align="center"><img src="docs/assets/console-framed.png" alt="open-bpo operations console" width="100%"></p>
 
-- Inbound and outbound mock call simulation
-- Fastify API and BullMQ session/QA workers
-- Deterministic, versioned checklist scoring with fatal checks
-- React operations console for calls, sessions, traces, and QA breakdowns
-- Swappable telephony, STT, TTS, and LLM interfaces
-- Filesystem recipes for prompts, tools, and QA policy
-- Local Redis and Postgres stack through Docker Compose
-- No-key golden-path script suitable for local smoke tests
+## Why this exists
+
+BPOs are moving to AI. Most of the work on a call floor is repetitive, and voice models are now good enough to do a lot of it.
+
+The hard part isn't the model. It's everything around it: queues, session state, QA you can trust, and a console your team watches all day. If you rent all of that as a black box, you can't change how calls are scored or where your data goes.
+
+So you need to own the stack. open-bpo is the smallest version of that stack we could make, small enough to read in an evening and run in an afternoon. It's built by the team at [QualiaBits](https://qualiabits.com).
+
+**What it is not:** a hosted product, or something that places real phone calls out of the box. It's an early, readable scaffold you own and extend.
+
+## How it works
+
+- **API** (`apps/api`): Fastify server. Takes demo calls or provider webhooks, stores state in Postgres, enqueues work.
+- **Worker** (`apps/worker`): BullMQ consumers that run each session loop and score it.
+- **QA** (`packages/qa`): checklist schema and scorer. Pure and deterministic, so scores can be diffed.
+- **Providers** (`packages/providers`): interfaces for telephony, STT, TTS and LLM, with mock adapters.
+- **Console** (`apps/web`): React/Vite dashboard over the API.
+- **Recipes** (`recipes/`): one folder per use case.
 
 ## Architecture
+
+![architecture](docs/assets/architecture.png)
 
 ```mermaid
 flowchart LR
@@ -109,7 +143,15 @@ recipes        prompts, tools, and QA checklists
 
 The [roadmap](ROADMAP.md) lists scoped starter issues and larger production-readiness work. Contributions are welcome; read [CONTRIBUTING.md](CONTRIBUTING.md), use the issue templates, and keep the no-key mock path working. Security reports belong in [SECURITY.md](SECURITY.md), not a public issue.
 
-If this scaffold saves you time, [star the repository](https://github.com/nitturkaryash/open-bpo) so other call-operations developers can find it.
+## Get help
+
+- [GitHub Issues](https://github.com/nitturkaryash/open-bpo/issues). Best for: bugs and "it broke on my machine".
+- [CONTRIBUTING.md](CONTRIBUTING.md). Best for: your first PR.
+- [SECURITY.md](SECURITY.md). Best for: vulnerabilities. Please don't open a public issue.
+
+## Star the repo
+
+If open-bpo saved you an afternoon, ⭐ [star it](https://github.com/nitturkaryash/open-bpo). It helps other people building for call centres find it. Watch releases to get notified of new versions.
 
 ## Production help
 

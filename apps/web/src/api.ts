@@ -36,6 +36,42 @@ export interface QaCallDetail {
   };
 }
 
+export interface RecipeSummary {
+  id: string;
+  checklistPath: string;
+  promptPath: string;
+  toolsPath: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  maxScore: number;
+  fatal: boolean;
+  rule: { type: string; keywords?: string[] };
+}
+
+export interface RecipeDetail {
+  id: string;
+  prompt: string;
+  checklist: {
+    id: string;
+    name: string;
+    version: string;
+    description: string;
+    passThreshold: number;
+    warningThreshold: number;
+    items: ChecklistItem[];
+  };
+  tools: Array<{ name: string; description: string }>;
+}
+
+export interface ProviderGroup {
+  id: string;
+  name: string;
+  providers: Array<{ id: string; name: string; configured: boolean }>;
+}
+
 export interface SessionSummary {
   sessionId: string;
   callId: string;
@@ -81,14 +117,28 @@ export async function fetchCallQa(callId: string): Promise<{ status: "pending" |
   return { status: "ready", call: data.call };
 }
 
-export async function fetchRecipes(): Promise<string[]> {
+export async function fetchRecipes(): Promise<RecipeSummary[]> {
   const response = await fetch(`${API_BASE_URL}/v1/recipes`);
   if (!response.ok) {
     throw new Error("Failed to load recipes");
   }
 
-  const data = (await response.json()) as { recipes: Array<{ id: string }> };
-  return data.recipes.map((recipe) => recipe.id);
+  const data = (await response.json()) as { recipes: RecipeSummary[] };
+  return data.recipes;
+}
+
+export async function fetchRecipe(recipeId: string): Promise<RecipeDetail> {
+  const response = await fetch(`${API_BASE_URL}/v1/recipes/${encodeURIComponent(recipeId)}`);
+  if (!response.ok) throw new Error("Failed to load recipe");
+  const data = (await response.json()) as { recipe: RecipeDetail };
+  return data.recipe;
+}
+
+export async function fetchProviderStatus(): Promise<ProviderGroup[]> {
+  const response = await fetch(`${API_BASE_URL}/v1/providers/status`);
+  if (!response.ok) throw new Error("Failed to load provider status");
+  const data = (await response.json()) as { providers: ProviderGroup[] };
+  return data.providers;
 }
 
 export async function fetchSessions(): Promise<SessionSummary[]> {
