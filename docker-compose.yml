@@ -34,11 +34,9 @@ services:
     command: pnpm --filter @open-bpo/api dev
     environment:
       API_PORT: 4017
-      REDIS_URL: redis://host.docker.internal:56379
-      DATABASE_URL: postgresql://open_bpo:open_bpo@host.docker.internal:55432/open_bpo
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://open_bpo:open_bpo@postgres:5432/open_bpo
       RECIPE_ID: lead-qualification
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "4017:4017"
     depends_on:
@@ -53,11 +51,9 @@ services:
       dockerfile: Dockerfile
     command: pnpm --filter @open-bpo/worker dev
     environment:
-      REDIS_URL: redis://host.docker.internal:56379
-      DATABASE_URL: postgresql://open_bpo:open_bpo@host.docker.internal:55432/open_bpo
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://open_bpo:open_bpo@postgres:5432/open_bpo
       RECIPE_ID: lead-qualification
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
