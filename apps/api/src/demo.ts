@@ -7,6 +7,7 @@ import { loadChecklist, scoreTranscriptAgainstChecklist, type ScoreResult } from
 import { z } from "zod";
 import { buildDemoTranscript } from "./demo-data";
 import { listRecipeSummaries } from "./recipes";
+import { registerConsoleRoutes } from "./console-routes";
 
 type Direction = "inbound" | "outbound";
 type Transcript = ReturnType<typeof buildDemoTranscript>;
@@ -25,7 +26,7 @@ interface DemoCall {
 interface DemoSession {
   sessionId: string;
   callId: string;
-  provider: "mock";
+  provider: "mock" | "twilio" | "livekit";
   direction: Direction;
   recipeId: string;
   state: "pending" | "assigned" | "active" | "completed";
@@ -86,6 +87,7 @@ async function main(): Promise<void> {
 
   app.get("/health", async () => ({ status: "ok", service: "open-bpo-demo-api" }));
   app.get("/v1/recipes", async () => ({ recipes: await listRecipeSummaries(process.cwd()) }));
+  registerConsoleRoutes(app, { cwd: process.cwd(), env: process.env });
   app.get("/v1/calls", async () => ({
     calls: calls.map((call) => ({
       callId: call.callId,
@@ -132,7 +134,7 @@ async function main(): Promise<void> {
   });
   app.post("/v1/demo/calls/:direction", async (request, reply) => {
     const { direction } = z.object({ direction: z.enum(["inbound", "outbound"]) }).parse(request.params);
-    const payload = z.object({ recipeId: z.string().default("lead-qualification") }).parse(request.body ?? {});
+    const payload = z.object({ recipeId: z.string().default("lead-qualification"), provider: z.enum(["mock", "twilio", "livekit"]).default("mock") }).parse(request.body ?? {});
     const createdAt = new Date().toISOString();
     const transcript = buildDemoTranscript(direction, payload.recipeId);
     const checklist = await getChecklist(payload.recipeId);
@@ -142,7 +144,7 @@ async function main(): Promise<void> {
     const session: DemoSession = {
       sessionId,
       callId,
-      provider: "mock",
+      provider: payload.provider,
       direction,
       recipeId: payload.recipeId,
       state: "pending",

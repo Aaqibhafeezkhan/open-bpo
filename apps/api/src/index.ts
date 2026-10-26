@@ -18,6 +18,7 @@ import { createQueues } from "./queue";
 import { listRecipeSummaries } from "./recipes";
 import { loadConfig } from "./config";
 import { buildDemoTranscript } from "./demo-data";
+import { registerConsoleRoutes } from "./console-routes";
 
 const callEndedSchema = z.object({
   callId: z.string().min(1),
@@ -148,6 +149,7 @@ async function main(): Promise<void> {
     const recipes = await listRecipeSummaries(process.cwd());
     return { recipes };
   });
+  registerConsoleRoutes(app, { cwd: process.cwd(), env: process.env });
 
   app.get("/v1/calls", async () => {
     const calls = await listCalls(pool);

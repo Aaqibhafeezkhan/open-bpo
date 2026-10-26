@@ -37,6 +37,43 @@ Response:
 }
 ```
 
+### `GET /v1/recipes/:recipeId`
+
+Returns the read-only prompt text, parsed checklist, and parsed tools for one recipe. Unknown or invalid recipe IDs return `404`; IDs are validated before any filesystem access.
+
+Response:
+
+```json
+{
+  "recipe": {
+    "id": "lead-qualification",
+    "prompt": "# Lead Qualification Agent Prompt...",
+    "checklist": { "id": "lead-qualification", "items": [] },
+    "tools": []
+  }
+}
+```
+
+---
+
+## Provider status
+
+### `GET /v1/providers/status`
+
+Returns provider configuration status grouped by category. The response contains names and booleans only; it never exposes environment values.
+
+```json
+{
+  "providers": [
+    {
+      "id": "phone",
+      "name": "Phone line",
+      "providers": [{ "id": "mock", "name": "Mock", "configured": true }]
+    }
+  ]
+}
+```
+
 ---
 
 ## Calls and QA
