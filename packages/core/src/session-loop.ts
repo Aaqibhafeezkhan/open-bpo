@@ -22,7 +22,7 @@ export class MockLanguageModelEngine implements LanguageModelEngine {
   async respond(input: string): Promise<string> {
     const normalized = input.toLowerCase();
     if (normalized.includes("budget")) {
-      return "Great, sharing pricing bands. What monthly budget range is comfortable for you?";
+      return "Great, sharing service options. What monthly budget range is comfortable for you?";
     }
 
     if (normalized.includes("demo") || normalized.includes("callback")) {

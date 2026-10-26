@@ -11,3 +11,6 @@ COPY recipes ./recipes
 RUN pnpm install --frozen-lockfile
 
 ENV NODE_ENV=development
+
+EXPOSE 4017
+CMD ["pnpm", "--filter", "@open-bpo/api", "dev"]

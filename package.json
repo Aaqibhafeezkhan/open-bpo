@@ -9,6 +9,7 @@
     "dev:api": "pnpm --filter @open-bpo/api dev",
     "dev:worker": "pnpm --filter @open-bpo/worker dev",
     "dev:web": "pnpm --filter @open-bpo/web dev",
+    "demo": "node scripts/demo.mjs",
     "demo:golden": "./scripts/demo-golden-path.sh",
     "seed:sample": "./scripts/seed-sample-data.sh",
     "lint": "pnpm -r --if-present lint",

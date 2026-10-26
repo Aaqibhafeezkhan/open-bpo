@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
+    "demo": "tsx src/demo.ts",
     "typecheck": "tsc --noEmit",
     "test": "echo \"No API tests yet\""
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",
     "@open-bpo/core": "workspace:*",
+    "@open-bpo/qa": "workspace:*",
     "bullmq": "^5.61.0",
     "fastify": "^5.6.1",
     "ioredis": "^5.8.1",

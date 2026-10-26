@@ -99,7 +99,7 @@ async function main(): Promise<void> {
           userUtterances:
             job.data.seedUtterances.length > 0
               ? job.data.seedUtterances
-              : ["Hello", "I need help with pricing", "Please schedule callback"],
+              : ["Hello", "I need account help", "Please schedule callback"],
           stt: new MockSpeechToTextEngine(),
           llm: new MockLanguageModelEngine(),
           tts: new MockTextToSpeechEngine(),
