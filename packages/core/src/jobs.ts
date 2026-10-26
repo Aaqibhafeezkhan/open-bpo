@@ -1,4 +1,4 @@
-import type { TranscriptTurn } from "./types";
+import type { SessionProvider, TranscriptTurn } from "./types";
 
 export const QUEUES = {
   qaScoring: "qa-scoring",
@@ -15,7 +15,7 @@ export interface QaScoringJob {
 export interface SessionLoopJob {
   sessionId: string;
   callId: string;
-  provider: "twilio" | "livekit" | "mock";
+  provider: SessionProvider;
   recipeId: string;
   seedUtterances: string[];
 }

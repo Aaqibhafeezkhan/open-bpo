@@ -1,15 +1,12 @@
 import { Worker } from "bullmq";
 import IORedis from "ioredis";
 import {
-  MockLanguageModelEngine,
-  MockSpeechToTextEngine,
-  MockTextToSpeechEngine,
   QUEUES,
   runVoiceSessionLoop,
   type QaScoringJob,
   type SessionLoopJob
 } from "@open-bpo/core";
-import { providerFactory } from "@open-bpo/providers";
+import { createProviderBundle } from "@open-bpo/providers";
 import { scoreTranscriptAgainstChecklist } from "@open-bpo/qa";
 import { loadConfig } from "./config";
 import { createPool, ensureSchema, persistQaResult, updateSessionState } from "./db";
@@ -35,6 +32,7 @@ async function bootstrapWithRetry(task: () => Promise<void>): Promise<void> {
 
 async function main(): Promise<void> {
   const config = loadConfig();
+  const providers = createProviderBundle();
   const redis = new IORedis(config.REDIS_URL, { maxRetriesPerRequest: null });
   const pool = createPool(config.DATABASE_URL);
 
@@ -72,7 +70,7 @@ async function main(): Promise<void> {
   const sessionWorker = new Worker<SessionLoopJob>(
     QUEUES.sessionLoop,
     async (job) => {
-      const provider = providerFactory(job.data.provider);
+      const provider = providers.telephony;
 
       await updateSessionState(pool, {
         sessionId: job.data.sessionId,
@@ -100,9 +98,9 @@ async function main(): Promise<void> {
             job.data.seedUtterances.length > 0
               ? job.data.seedUtterances
               : ["Hello", "I need account help", "Please schedule callback"],
-          stt: new MockSpeechToTextEngine(),
-          llm: new MockLanguageModelEngine(),
-          tts: new MockTextToSpeechEngine(),
+          stt: providers.stt,
+          llm: providers.llm,
+          tts: providers.tts,
           tools: [
             {
               name: "schedule_callback",
