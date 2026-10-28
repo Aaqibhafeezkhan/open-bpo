@@ -36,20 +36,20 @@ const callEndedSchema = z.object({
   ]),
   recipeId: z.string().optional(),
   startSession: z.boolean().default(false),
-  provider: z.enum(["twilio", "livekit", "mock"]).default("mock")
+  provider: z.enum(["twilio", "mock"]).default("mock")
 });
 
 const createSessionSchema = z.object({
   callId: z.string().min(1),
   direction: z.enum(["inbound", "outbound"]).default("inbound"),
-  provider: z.enum(["twilio", "livekit", "mock"]).default("mock"),
+  provider: z.enum(["twilio", "mock"]).default("mock"),
   recipeId: z.string().default("lead-qualification"),
   seedUtterances: z.array(z.string().min(1)).default([])
 });
 
 const demoCallSchema = z.object({
   recipeId: z.string().default("lead-qualification"),
-  provider: z.enum(["twilio", "livekit", "mock"]).default("mock"),
+  provider: z.enum(["twilio", "mock"]).default("mock"),
   startSession: z.boolean().default(true)
 });
 

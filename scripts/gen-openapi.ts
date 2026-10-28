@@ -6,7 +6,7 @@ const repoRoot = path.resolve(process.cwd(), "..", "..");
 const outputPath = path.join(repoRoot, "docs", "openapi.json");
 
 async function main(): Promise<void> {
-  const app = await buildDemoApp({ env: { NODE_ENV: "test" } });
+  const app = await buildDemoApp({ env: { NODE_ENV: "test", OPEN_BPO_ALLOW_NO_AUTH: "true" } });
   try {
     await app.ready();
     const document = app.swagger();

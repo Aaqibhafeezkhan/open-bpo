@@ -5,7 +5,11 @@ const processes = [
   ["worker", ["--filter", "@open-bpo/worker", "demo"]],
   ["web", ["--filter", "@open-bpo/web", "dev"]]
 ].map(([name, args]) => {
-  const child = spawn("pnpm", args, { stdio: "inherit", env: process.env });
+  const child = spawn("pnpm", args, {
+    stdio: "inherit",
+    // The demo is mock-only and local; the API otherwise refuses to serve without a token.
+    env: { OPEN_BPO_ALLOW_NO_AUTH: "true", ...process.env }
+  });
   child.on("exit", (code, signal) => {
     if (!stopping && (code !== 0 || signal)) {
       console.error(`${name} stopped unexpectedly`);

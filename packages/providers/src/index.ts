@@ -5,7 +5,7 @@ import {
 import type { Fetch } from "./http";
 import { OpenAICompatibleLanguageModelEngine } from "./llm";
 import { DeepgramSpeechToTextEngine, ElevenLabsTextToSpeechEngine, SarvamSpeechToTextEngine, SarvamTextToSpeechEngine } from "./speech";
-import { ExotelProvider, LiveKitProvider, MockProvider, TwilioProvider, type Provider } from "./telephony";
+import { ExotelProvider, MockProvider, TwilioProvider, type Provider } from "./telephony";
 
 export * from "./http";
 export * from "./llm";
@@ -26,6 +26,9 @@ function values(env: ProviderEnvironment, names: string[], selected: string): st
 
 export function providerFactory(provider?: SessionProvider, env: ProviderEnvironment = process.env, fetch: Fetch = globalThis.fetch): Provider {
   provider ??= (["twilio", "exotel", "livekit", "mock"].includes(env.TELEPHONY_PROVIDER ?? "") ? env.TELEPHONY_PROVIDER : "mock") as SessionProvider;
+  if (provider === "livekit") {
+    throw new Error("The livekit telephony provider is not implemented yet (it was a mock stub). Use TELEPHONY_PROVIDER=mock, twilio, or exotel.");
+  }
   if (provider === "twilio") {
     const config = values(env, ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER", "TWILIO_TO_NUMBER", "MEDIA_STREAM_URL"], "twilio");
     return config ? new TwilioProvider({ accountSid: config[0]!, authToken: config[1]!, from: config[2]!, to: config[3]!, mediaStreamUrl: config[4]! }, fetch) : new MockProvider();
@@ -34,7 +37,7 @@ export function providerFactory(provider?: SessionProvider, env: ProviderEnviron
     const config = values(env, ["EXOTEL_ACCOUNT_SID", "EXOTEL_API_KEY", "EXOTEL_API_TOKEN", "EXOTEL_FROM_NUMBER", "EXOTEL_TO_NUMBER", "EXOTEL_CALLER_ID", "MEDIA_STREAM_URL"], "exotel");
     return config ? new ExotelProvider({ accountSid: config[0]!, apiKey: config[1]!, apiToken: config[2]!, from: config[3]!, to: config[4]!, callerId: config[5]!, mediaStreamUrl: config[6]!, ...(env.EXOTEL_BASE_URL ? { baseUrl: env.EXOTEL_BASE_URL } : {}) }, fetch) : new MockProvider();
   }
-  return provider === "livekit" ? new LiveKitProvider() : new MockProvider();
+  return new MockProvider();
 }
 
 export function createProviderBundle(env: ProviderEnvironment = process.env, fetch: Fetch = globalThis.fetch): ProviderBundle {

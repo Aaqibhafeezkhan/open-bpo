@@ -136,7 +136,7 @@ export async function buildDemoApp(options: { env?: NodeJS.ProcessEnv; apiUrl?: 
   });
   app.post("/v1/demo/calls/:direction", async (request, reply) => {
     const { direction } = z.object({ direction: z.enum(["inbound", "outbound"]) }).parse(request.params);
-    const payload = z.object({ recipeId: z.string().default("lead-qualification"), provider: z.enum(["mock", "twilio", "livekit"]).default("mock") }).parse(request.body ?? {});
+    const payload = z.object({ recipeId: z.string().default("lead-qualification"), provider: z.enum(["mock", "twilio"]).default("mock") }).parse(request.body ?? {});
     const createdAt = new Date().toISOString();
     const transcript = buildDemoTranscript(direction, payload.recipeId);
     const checklist = await getChecklist(payload.recipeId);
