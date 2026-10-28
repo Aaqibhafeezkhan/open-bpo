@@ -127,6 +127,10 @@ Each directory under `recipes/` contains a prompt, tool declarations, and a dete
 - [QA checklist examples](docs/QA_CHECKLISTS.md)
 - [API reference](docs/API_REFERENCE.md)
 
+## Use with AI agents (MCP)
+
+Connect Cursor, Claude Desktop, Grok Bot, or another MCP client through the local stdio server or the API's streamable HTTP endpoint. See [docs/MCP.md](docs/MCP.md) for configuration and privacy controls.
+
 ## Repository layout
 
 ```text

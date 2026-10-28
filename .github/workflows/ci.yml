@@ -46,3 +46,6 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Check OpenAPI document
+        run: pnpm openapi:check

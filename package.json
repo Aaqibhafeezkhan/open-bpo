@@ -5,7 +5,7 @@
   "description": "Deploy an AI BPO floor in one afternoon",
   "packageManager": "pnpm@10.33.4",
   "scripts": {
-    "build": "pnpm --filter @open-bpo/web build",
+    "build": "pnpm --filter @open-bpo/mcp build && pnpm --filter @open-bpo/web build",
     "dev:api": "pnpm --filter @open-bpo/api dev",
     "dev:worker": "pnpm --filter @open-bpo/worker dev",
     "dev:web": "pnpm --filter @open-bpo/web dev",
@@ -14,6 +14,8 @@
     "seed:sample": "./scripts/seed-sample-data.sh",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "openapi": "pnpm --filter @open-bpo/api exec tsx ../../scripts/gen-openapi.ts",
+    "openapi:check": "pnpm --filter @open-bpo/api exec tsx ../../scripts/gen-openapi.ts --check"
   }
 }
