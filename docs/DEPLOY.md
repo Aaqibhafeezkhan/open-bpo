@@ -17,6 +17,7 @@ For production, split into dedicated services behind a reverse proxy.
 ## 2. Environment requirements
 
 Minimum environment settings:
+- `OPEN_BPO_API_TOKEN` (required; without it the API answers 503 on `/v1/*` and `/mcp`)
 - `DATABASE_URL`
 - `REDIS_URL`
 - `API_PORT`
@@ -25,6 +26,7 @@ Minimum environment settings:
 
 Recommended additions for production hardening:
 - `NODE_ENV=production`
+- `TELEPHONY_PROVIDER` set only to a real adapter (`twilio` or `exotel`); `livekit` is not implemented and is rejected
 - explicit CORS origin allowlist
 - structured logging sink (Loki/ELK/Datadog)
 - TLS termination at ingress/load balancer

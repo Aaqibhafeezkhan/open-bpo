@@ -56,7 +56,7 @@ export function createOpenBpoMcpServer(client: OpenBpoClient): McpServer {
     inputSchema: {
       direction: z.enum(["inbound", "outbound"]),
       recipeId: z.string().default("lead-qualification"),
-      provider: z.enum(["mock", "twilio", "livekit"]).default("mock")
+      provider: z.enum(["mock", "twilio"]).default("mock")
     }, annotations: mutating
   }, async ({ direction, recipeId, provider }) => {
     if (provider !== "mock" && process.env.OPEN_BPO_ALLOW_REAL_CALLS !== "1") {
