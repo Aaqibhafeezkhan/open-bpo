@@ -8,6 +8,16 @@ import { OpenBpoClient, handleOpenBpoMcpHttp } from "@open-bpo/mcp/source";
 
 const defaultOrigins = ["http://localhost:43123", "http://127.0.0.1:43123"];
 
+/** Explicit opt-in for running /v1 and /mcp without a token (local demo only). */
+export function isNoAuthAllowed(env: NodeJS.ProcessEnv): boolean {
+  return env.OPEN_BPO_ALLOW_NO_AUTH === "true";
+}
+
+function isProtectedPath(url: string): boolean {
+  const pathname = (url.split("?")[0] ?? "").toLowerCase();
+  return pathname.startsWith("/v1") || pathname.startsWith("/mcp");
+}
+
 export function assertProductionAuth(env: NodeJS.ProcessEnv): void {
   if (env.NODE_ENV === "production" && !env.OPEN_BPO_API_TOKEN?.trim()) {
     throw new Error("OPEN_BPO_API_TOKEN is required when NODE_ENV=production");
@@ -41,8 +51,17 @@ export async function registerApiFoundation(app: FastifyInstance, options: { env
   });
 
   const token = options.env.OPEN_BPO_API_TOKEN?.trim();
+  const allowNoAuth = isNoAuthAllowed(options.env);
+  if (!token && allowNoAuth) {
+    app.log.warn("OPEN_BPO_ALLOW_NO_AUTH=true: /v1 and /mcp are UNAUTHENTICATED. Use for local demo only.");
+  }
+  // Fail closed: protected paths are checked first, and a missing token is an error, not a bypass.
   app.addHook("onRequest", async (request, reply) => {
-    if (!token || (!request.url.startsWith("/v1/") && !request.url.startsWith("/mcp"))) return;
+    if (!isProtectedPath(request.url)) return;
+    if (!token) {
+      if (allowNoAuth) return;
+      return reply.code(503).send({ error: "API authentication is not configured. Set OPEN_BPO_API_TOKEN (or OPEN_BPO_ALLOW_NO_AUTH=true for local demo only)." });
+    }
     if (!authorized(request, token)) return reply.code(401).send({ error: "Unauthorized" });
   });
 

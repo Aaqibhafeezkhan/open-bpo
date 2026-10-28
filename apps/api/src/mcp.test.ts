@@ -26,7 +26,7 @@ async function connect(clientApi: OpenBpoClient): Promise<Client> {
   return client;
 }
 
-async function startDemo(env: NodeJS.ProcessEnv = { NODE_ENV: "test" }) {
+async function startDemo(env: NodeJS.ProcessEnv = { NODE_ENV: "test", OPEN_BPO_ALLOW_NO_AUTH: "true" }) {
   const app = await buildDemoApp({ env });
   apps.push(app);
   const address = await app.listen({ host: "127.0.0.1", port: 0 });
@@ -49,7 +49,7 @@ afterEach(async () => {
 
 describe("open-bpo MCP tools", () => {
   it("serves the tool catalog over streamable HTTP", async () => {
-    const app = await buildDemoApp({ env: { NODE_ENV: "test" } });
+    const app = await buildDemoApp({ env: { NODE_ENV: "test", OPEN_BPO_ALLOW_NO_AUTH: "true" } });
     apps.push(app);
     const address = await app.listen({ host: "127.0.0.1", port: 0 });
     const client = new Client({ name: "open-bpo-http-test", version: "0.1.0" });
@@ -84,7 +84,7 @@ describe("open-bpo MCP tools", () => {
     const marker = "provider-secret-marker";
     process.env.TWILIO_AUTH_TOKEN = marker;
     const client = await connect(await startDemo({
-      NODE_ENV: "test", TWILIO_ACCOUNT_SID: marker, TWILIO_AUTH_TOKEN: marker,
+      NODE_ENV: "test", OPEN_BPO_ALLOW_NO_AUTH: "true", TWILIO_ACCOUNT_SID: marker, TWILIO_AUTH_TOKEN: marker,
       TWILIO_FROM_NUMBER: marker, TWILIO_TO_NUMBER: marker, MEDIA_STREAM_URL: marker
     }));
     const text = outputText(await client.callTool({ name: "provider_status", arguments: {} }));

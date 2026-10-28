@@ -6,6 +6,7 @@ import {
   ElevenLabsTextToSpeechEngine,
   ExotelProvider,
   MockProvider,
+  providerFactory,
   OpenAICompatibleLanguageModelEngine,
   SarvamSpeechToTextEngine,
   SarvamTextToSpeechEngine,
@@ -81,4 +82,10 @@ test("factory defaults to mock and warns once with missing variable names", () =
   assert.equal(warnings.length, 1);
   assert.match(String(warnings[0]?.[0]), /TWILIO_AUTH_TOKEN.*MEDIA_STREAM_URL/);
   assert.doesNotMatch(String(warnings[0]?.[0]), /sid-test/);
+});
+
+test("livekit is rejected loudly instead of silently returning a mock", () => {
+  assert.throws(() => providerFactory("livekit", {}), /livekit.*not implemented/i);
+  assert.throws(() => providerFactory(undefined, { TELEPHONY_PROVIDER: "livekit" }), /not implemented/i);
+  assert.equal(providerFactory("mock", {}).provider, "mock");
 });

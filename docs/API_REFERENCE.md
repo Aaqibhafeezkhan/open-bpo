@@ -4,7 +4,7 @@ Base URL (local default): `http://127.0.0.1:4017`
 
 ## Authentication and browser access
 
-Set `OPEN_BPO_API_TOKEN` to protect every `/v1/*` route and `/mcp`. Clients send `Authorization: Bearer <token>`. `/health`, `/docs/openapi.json`, and `/llms.txt` remain open. Production mode refuses to start without a token.
+Set `OPEN_BPO_API_TOKEN` to protect every `/v1/*` route and `/mcp`. Clients send `Authorization: Bearer <token>`. `/health`, `/docs/openapi.json`, and `/llms.txt` remain open. The API fails closed: with no `OPEN_BPO_API_TOKEN`, every `/v1/*` and `/mcp` request returns `503` (production mode also refuses to start). For a local, mock-only demo you can opt out with `OPEN_BPO_ALLOW_NO_AUTH=true`; `pnpm demo` and `docker compose` set it for you. Never set it on a network-reachable instance.
 
 Browser origins are limited by `OPEN_BPO_CORS_ORIGINS`, a comma-separated list. Its default permits the local web console at `http://localhost:43123` and `http://127.0.0.1:43123`. The web app can send the bearer header through `VITE_API_TOKEN`.
 
