@@ -22,7 +22,7 @@ Recommended sections:
 
 ## 2) `tools.json`
 
-A list of tool descriptors available for the session loop.
+The tools the model may call during a session. The worker loads this file at session start and offers exactly these tools to the model; the model decides when to call them and sees the results. `parameters` is an optional JSON Schema for the arguments. Handlers are bound by `name` in `apps/worker/src/tools.ts`; a tool with no handler falls back to a mock.
 
 Example:
 
@@ -30,7 +30,11 @@ Example:
 [
   {
     "name": "crm_lookup",
-    "description": "Fetch known lead metadata by phone number"
+    "description": "Fetch known lead metadata by phone number",
+    "parameters": {
+      "type": "object",
+      "properties": { "phone": { "type": "string", "description": "Caller phone number" } }
+    }
   }
 ]
 ```

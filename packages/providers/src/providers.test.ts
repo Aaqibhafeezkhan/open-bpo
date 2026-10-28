@@ -57,14 +57,35 @@ test("STT and TTS adapters map vendor responses", async () => {
 test("OpenAI-compatible LLM supports standard and Azure authentication", async () => {
   const standardCalls: Array<{ url: string; init?: RequestInit }> = [];
   const standard = new OpenAICompatibleLanguageModelEngine({ baseUrl: "https://test.invalid/v1", apiKey: "test-key", model: "test-model" }, stub({ choices: [{ message: { content: "answer" } }] }, standardCalls));
-  assert.equal(await standard.respond("question"), "answer");
+  assert.deepEqual(await standard.respond({ messages: [{ role: "user", content: "question" }], tools: [] }), { type: "final", text: "answer" });
   assert.equal((standardCalls[0]?.init?.headers as Record<string, string>).authorization, "Bearer test-key");
 
   const azureCalls: Array<{ url: string; init?: RequestInit }> = [];
   const azure = new OpenAICompatibleLanguageModelEngine({ baseUrl: "https://test.openai.azure.com/openai/deployments/test", apiKey: "test-key", model: "test-model", azureApiVersion: "2025-test" }, stub({ choices: [{ message: { content: "azure-answer" } }] }, azureCalls));
-  assert.equal(await azure.respond("question"), "azure-answer");
+  assert.deepEqual(await azure.respond({ messages: [{ role: "user", content: "question" }], tools: [] }), { type: "final", text: "azure-answer" });
   assert.match(azureCalls[0]?.url ?? "", /api-version=2025-test/);
   assert.equal((azureCalls[0]?.init?.headers as Record<string, string>)["api-key"], "test-key");
+});
+
+test("OpenAI-compatible LLM sends tools and history and parses tool calls", async () => {
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
+  const llm = new OpenAICompatibleLanguageModelEngine({ baseUrl: "https://test.invalid/v1", apiKey: "test-key", model: "test-model" }, stub({
+    choices: [{ message: { content: null, tool_calls: [{ id: "call_1", type: "function", function: { name: "crm_lookup", arguments: "{\"phone\":\"123\"}" } }] } }]
+  }, calls));
+  const reply = await llm.respond({
+    messages: [
+      { role: "system", content: "be brief" },
+      { role: "user", content: "who am I" },
+      { role: "assistant", content: "", toolCalls: [{ id: "prev", name: "crm_lookup", arguments: { a: 1 } }] },
+      { role: "tool", toolCallId: "prev", name: "crm_lookup", content: "ok" }
+    ],
+    tools: [{ name: "crm_lookup", description: "Lookup", parameters: { type: "object", properties: { phone: { type: "string" } } } }]
+  });
+  assert.deepEqual(reply, { type: "tool_calls", calls: [{ id: "call_1", name: "crm_lookup", arguments: { phone: "123" } }] });
+  const body = JSON.parse(String(calls[0]?.init?.body)) as { tools: Array<{ function: { name: string } }>; messages: Array<Record<string, unknown>> };
+  assert.equal(body.tools[0]?.function.name, "crm_lookup");
+  assert.equal(body.messages[2]?.role, "assistant");
+  assert.deepEqual(body.messages[3], { role: "tool", tool_call_id: "prev", content: "ok" });
 });
 
 test("factory defaults to mock and warns once with missing variable names", () => {

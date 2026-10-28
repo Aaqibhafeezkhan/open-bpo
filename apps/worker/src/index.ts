@@ -10,7 +10,8 @@ import { createProviderBundle } from "@open-bpo/providers";
 import { scoreTranscriptAgainstChecklist } from "@open-bpo/qa";
 import { loadConfig } from "./config";
 import { createPool, ensureSchema, persistQaResult, updateSessionState } from "./db";
-import { getChecklist } from "./recipes";
+import { getChecklist, loadRecipePrompt, loadRecipeToolSpecs } from "./recipes";
+import { buildTools } from "./tools";
 
 async function bootstrapWithRetry(task: () => Promise<void>): Promise<void> {
   const maxAttempts = 20;
@@ -93,6 +94,8 @@ async function main(): Promise<void> {
           externalSessionId
         });
 
+        const tools = buildTools(await loadRecipeToolSpecs(job.data.recipeId));
+        const systemPrompt = await loadRecipePrompt(job.data.recipeId);
         const sessionResult = await runVoiceSessionLoop({
           userUtterances:
             job.data.seedUtterances.length > 0
@@ -101,22 +104,8 @@ async function main(): Promise<void> {
           stt: providers.stt,
           llm: providers.llm,
           tts: providers.tts,
-          tools: [
-            {
-              name: "schedule_callback",
-              description: "Schedule a callback",
-              async run() {
-                return "callback_scheduled";
-              }
-            },
-            {
-              name: "crm_lookup",
-              description: "Lookup CRM profile",
-              async run(input) {
-                return `crm_lookup_ok:${input.length}`;
-              }
-            }
-          ]
+          tools,
+          ...(systemPrompt ? { systemPrompt } : {})
         });
 
         await provider.stopSession(handle.externalSessionId);

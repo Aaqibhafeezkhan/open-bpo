@@ -1,10 +1,32 @@
 [
   {
     "name": "ticket_lookup",
-    "description": "Look up ticket status in support backend"
+    "description": "Look up ticket status in support backend",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "ticket_id": {
+          "type": "string",
+          "description": "Ticket number the caller provided"
+        }
+      }
+    }
   },
   {
     "name": "ticket_escalate",
-    "description": "Escalate unresolved issue to L2 queue"
+    "description": "Escalate unresolved issue to L2 queue",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "ticket_id": {
+          "type": "string",
+          "description": "Ticket number"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why it needs L2"
+        }
+      }
+    }
   }
 ]
