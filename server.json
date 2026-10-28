@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nitturkaryash/open-bpo",
+  "description": "Call operations, recipes, session traces, and deterministic QA over MCP.",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@open-bpo/mcp",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "OPEN_BPO_API_URL",
+          "description": "Base URL of the open-bpo API.",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "OPEN_BPO_TOKEN",
+          "description": "Bearer token for the open-bpo API.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

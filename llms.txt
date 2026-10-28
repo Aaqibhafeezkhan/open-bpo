@@ -1,0 +1,12 @@
+# open-bpo
+
+open-bpo is a self-hostable call-operations scaffold with deterministic QA, recipes, a web console, and MCP access.
+
+Quickstart: `pnpm install && pnpm demo`
+
+- Quickstart: docs/QUICKSTART.md
+- Architecture: docs/ARCHITECTURE.md
+- Recipe authoring: docs/RECIPE_AUTHORING.md
+- API reference: docs/API_REFERENCE.md
+- OpenAPI: docs/openapi.json
+- MCP setup: docs/MCP.md
