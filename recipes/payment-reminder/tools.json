@@ -1,14 +1,54 @@
 [
   {
     "name": "account_summary",
-    "description": "Fetch the approved minimum account summary for the reminder"
+    "description": "Fetch the approved minimum account summary for the reminder",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "account_reference": {
+          "type": "string",
+          "description": "Account reference the caller provided, if any"
+        }
+      }
+    }
   },
   {
     "name": "record_payment_status",
-    "description": "Record that payment is complete, planned, disputed, or unknown"
+    "description": "Record that payment is complete, planned, disputed, or unknown",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "One of paid, planned, disputed, unknown",
+          "enum": [
+            "paid",
+            "planned",
+            "disputed",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "status"
+      ]
+    }
   },
   {
     "name": "schedule_callback",
-    "description": "Schedule a human callback without collecting payment credentials"
+    "description": "Schedule a human callback without collecting payment credentials",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "preferred_time": {
+          "type": "string",
+          "description": "When the caller wants the callback, as they said it"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Short reason for the callback"
+        }
+      }
+    }
   }
 ]

@@ -57,7 +57,7 @@ open-bpo is an OSS baseline for building deployable AI-enabled BPO operations:
 
 ## Package boundaries
 
-- `packages/core`: type contracts + mock voice loop + state model
+- `packages/core`: type contracts + tool-calling voice loop (multi-turn history, iteration cap) + mock engines + state model
 - `packages/providers`: provider abstraction and stubs for Twilio/LiveKit/mock
 - `packages/qa`: recipe schema + deterministic scoring engine
 

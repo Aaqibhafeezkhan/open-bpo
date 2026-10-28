@@ -7,7 +7,7 @@
     "dev": "tsx src/index.ts",
     "demo": "tsx src/demo.ts",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No worker tests yet\""
+    "test": "tsx --test src/*.test.ts"
   },
   "dependencies": {
     "@open-bpo/core": "workspace:*",

@@ -22,7 +22,8 @@ interface SpeechToTextEngine {
 }
 
 interface LanguageModelEngine {
-  respond(input: string): Promise<string>;
+  // Full history + available tools in, either a final answer or tool calls out.
+  respond(input: { messages: ChatMessage[]; tools: ToolSpec[] }): Promise<ModelReply>;
 }
 
 interface TextToSpeechEngine {
@@ -63,6 +64,8 @@ Pipecat is an orchestration framework rather than a telephony carrier. Use it in
 2. Build a Pipecat pipeline with the chosen transport, STT service, context/LLM processor, and TTS service.
 3. Adapt pipeline start/stop to `startSession` and `stopSession`, or expose a small internal service that the BullMQ worker calls.
 4. Persist only normalized transcript turns and lifecycle events through open-bpo. Keep raw audio retention off by default.
+
+The session loop keeps multi-turn history, lets the model request tools (`tool_calls`), runs them, feeds results back, and stops after `maxToolIterations` (default 5) model round-trips per caller turn, forcing a text answer. Tools are never matched against caller text. The worker loads them from the recipe's `tools.json` (`name`, `description`, optional JSON Schema `parameters`) and binds handlers by name in `apps/worker/src/tools.ts` (mock handlers by default); `prompt.md` is the system prompt. The mock LLM is a deterministic script that calls only tools the recipe offers, so `pnpm demo` needs no keys.
 
 Pipecat service objects can wrap `SpeechToTextEngine`, `LanguageModelEngine`, and `TextToSpeechEngine` for non-streaming compatibility. For a streaming implementation, add explicit frame and cancellation types instead of encoding audio into strings.
 

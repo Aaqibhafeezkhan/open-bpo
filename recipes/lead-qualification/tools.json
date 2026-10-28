@@ -1,14 +1,45 @@
 [
   {
     "name": "crm_lookup",
-    "description": "Fetch known lead metadata by phone number"
+    "description": "Fetch known lead metadata by phone number",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "phone": {
+          "type": "string",
+          "description": "Caller phone number, if known"
+        }
+      }
+    }
   },
   {
     "name": "schedule_callback",
-    "description": "Schedule a callback slot with a human closer"
+    "description": "Schedule a callback slot with a human closer",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "preferred_time": {
+          "type": "string",
+          "description": "When the caller wants the callback, as they said it"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Short reason for the callback"
+        }
+      }
+    }
   },
   {
     "name": "send_brochure",
-    "description": "Send a generic brochure link by SMS or WhatsApp"
+    "description": "Send a generic brochure link by SMS or WhatsApp",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "string",
+          "description": "sms or whatsapp"
+        }
+      }
+    }
   }
 ]
