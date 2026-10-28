@@ -92,8 +92,14 @@ const API_BASE_URL =
     ? "http://127.0.0.1:4017"
     : String(import.meta.env.VITE_API_BASE_URL);
 
+const API_TOKEN = import.meta.env.VITE_API_TOKEN === undefined ? "" : String(import.meta.env.VITE_API_TOKEN);
+
+function apiHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  return API_TOKEN ? { ...extra, Authorization: `Bearer ${API_TOKEN}` } : extra;
+}
+
 export async function fetchCalls(): Promise<CallSummary[]> {
-  const response = await fetch(`${API_BASE_URL}/v1/calls`);
+  const response = await fetch(`${API_BASE_URL}/v1/calls`, { headers: apiHeaders() });
   if (!response.ok) {
     throw new Error("Failed to load calls");
   }
@@ -103,7 +109,7 @@ export async function fetchCalls(): Promise<CallSummary[]> {
 }
 
 export async function fetchCallQa(callId: string): Promise<{ status: "pending" | "ready"; call?: QaCallDetail }> {
-  const response = await fetch(`${API_BASE_URL}/v1/calls/${callId}/qa`);
+  const response = await fetch(`${API_BASE_URL}/v1/calls/${callId}/qa`, { headers: apiHeaders() });
 
   if (response.status === 202) {
     return { status: "pending" };
@@ -118,7 +124,7 @@ export async function fetchCallQa(callId: string): Promise<{ status: "pending" |
 }
 
 export async function fetchRecipes(): Promise<RecipeSummary[]> {
-  const response = await fetch(`${API_BASE_URL}/v1/recipes`);
+  const response = await fetch(`${API_BASE_URL}/v1/recipes`, { headers: apiHeaders() });
   if (!response.ok) {
     throw new Error("Failed to load recipes");
   }
@@ -128,21 +134,21 @@ export async function fetchRecipes(): Promise<RecipeSummary[]> {
 }
 
 export async function fetchRecipe(recipeId: string): Promise<RecipeDetail> {
-  const response = await fetch(`${API_BASE_URL}/v1/recipes/${encodeURIComponent(recipeId)}`);
+  const response = await fetch(`${API_BASE_URL}/v1/recipes/${encodeURIComponent(recipeId)}`, { headers: apiHeaders() });
   if (!response.ok) throw new Error("Failed to load recipe");
   const data = (await response.json()) as { recipe: RecipeDetail };
   return data.recipe;
 }
 
 export async function fetchProviderStatus(): Promise<ProviderGroup[]> {
-  const response = await fetch(`${API_BASE_URL}/v1/providers/status`);
+  const response = await fetch(`${API_BASE_URL}/v1/providers/status`, { headers: apiHeaders() });
   if (!response.ok) throw new Error("Failed to load provider status");
   const data = (await response.json()) as { providers: ProviderGroup[] };
   return data.providers;
 }
 
 export async function fetchSessions(): Promise<SessionSummary[]> {
-  const response = await fetch(`${API_BASE_URL}/v1/sessions`);
+  const response = await fetch(`${API_BASE_URL}/v1/sessions`, { headers: apiHeaders() });
   if (!response.ok) {
     throw new Error("Failed to load sessions");
   }
@@ -158,9 +164,9 @@ export async function triggerDemoCall(input: {
 }): Promise<{ callId: string; sessionId: string | undefined }> {
   const response = await fetch(`${API_BASE_URL}/v1/demo/calls/${input.direction}`, {
     method: "POST",
-    headers: {
+    headers: apiHeaders({
       "Content-Type": "application/json"
-    },
+    }),
     body: JSON.stringify({
       recipeId: input.recipeId,
       provider: input.provider,
